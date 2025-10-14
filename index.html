@@ -1,7 +1,20 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BPMN Viewer</title>
+  <!-- 引入 bpmn-js 样式 -->
+  <link rel="stylesheet" href="https://unpkg.com/bpmn-js@17/dist/assets/bpmn-js.css">
+  <link rel="stylesheet" href="style.css">
+</head>
 <body>
-<!-- 引入 bpmn-js 库 -->
-    <script src="https://unpkg.com/bpmn-js@17/dist/bpmn-viewer.development.js"></script>
-    <script src="script.js"></script>
+  <div id="canvas"></div>
+  <div id="loading">Loading diagram...</div>
+  <div id="error"></div>
+
+  <!-- 引入 bpmn-js 库 -->
+  <script src="https://unpkg.com/bpmn-js@17/dist/bpmn-viewer.development.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
