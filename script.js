@@ -19,6 +19,12 @@ async function openDiagram(bpmnXML) {
     loadingEl.style.display = 'none';
     errorEl.textContent = 'Error rendering BPMN diagram: ' + err.message;
     console.error('Could not import BPMN 2.0 diagram', err);
+    // 在页面上显示更详细的错误信息，帮助调试
+        errorEl.innerHTML = `
+            <p>渲染BPMN图表失败。</p>
+            <p>可能原因：XML格式无效、BPMN语义错误（如缺少sourceRef/targetRef，见资料）或命名空间问题（见资料）。</p>
+            <p>详细错误信息已输出到浏览器控制台（F12查看）。</p>
+        `;
   }
 }
 
@@ -36,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (e) {
       loadingEl.style.display = 'none';
       errorEl.textContent = 'Failed to decode BPMN data from URL.';
-      console.error(e);
+      console.error('URL Decode Error:',e);
     }
   } else {
     loadingEl.style.display = 'none';
