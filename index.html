@@ -1,20 +1,145 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BPMN Viewer</title>
-  <!-- 引入 bpmn-js 样式 -->
-  <link rel="stylesheet" href="https://unpkg.com/bpmn-js@17/dist/assets/bpmn-js.css">
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BPMN流程图查看器</title>
+    <!-- 引入 bpmn-js 样式 -->
+    <link rel="stylesheet" href="https://unpkg.com/bpmn-js@^8.0.0/dist/assets/bpmn-js.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f7f9;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        .description {
+            font-size: 14px;
+            opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .viewer-container {
+            display: flex;
+            flex-direction: column;
+            height: 70vh;
+        }
+        #canvas {
+            flex: 1;
+            border: 1px solid #ddd;
+            min-height: 400px;
+        }
+        .status-panel {
+            padding: 15px;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .btn {
+            padding: 8px 16px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        .btn:hover {
+            background: #2980b9;
+        }
+        .btn-secondary {
+            background: #95a5a6;
+        }
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+        #loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            font-size: 18px;
+            color: #7f8c8d;
+        }
+        #error {
+            color: #e74c3c;
+            margin-right: 15px;
+        }
+        .zoom-controls {
+            display: flex;
+            gap: 10px;
+        }
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        .success-message {
+            color: #27ae60;
+            font-weight: 500;
+        }
+    </style>
 </head>
 <body>
-  <div id="canvas"></div>
-  <div id="loading">Loading diagram...</div>
-  <div id="error"></div>
+    <div class="container">
+        <header>
+            <h1>BPMN流程图查看器</h1>
+            <p class="description">智能解析BPMN XML并生成可视化流程图。只需通过URL传递XML参数即可使用。</p>
+        </header>
 
-  <!-- 引入 bpmn-js 库 -->
-  <script src="https://unpkg.com/bpmn-js@17/dist/bpmn-viewer.development.js"></script>
-  <script src="script.js"></script>
+        <div class="viewer-container">
+            <div id="canvas">
+                <div id="loading">正在加载流程图...</div>
+            </div>
+        </div>
+
+        <div class="status-panel">
+            <div id="status">
+                <span id="error"></span>
+                <span id="success" class="success-message"></span>
+            </div>
+            <div class="zoom-controls">
+                <button id="zoom-in" class="btn">放大</button>
+                <button id="zoom-out" class="btn">缩小</button>
+                <button id="reset-view" class="btn btn-secondary">重置视图</button>
+            </div>
+        </div>
+
+        <footer>
+            <p>Powered by bpmn-js | 流程图智能体渲染器</p>
+        </footer>
+    </div>
+
+    <!-- 引入 bpmn-js 库 -->
+    <script src="https://unpkg.com/bpmn-js@^8.0.0/dist/bpmn-viewer.production.min.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
