@@ -1,7 +1,25 @@
-<span data-key="30" class="reference-num" data-pages="undefined">370</span><span data-key="31" class="reference-num" data-pages="undefined">375</span>
+body, html {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: sans-serif;
+}
 
-css body, 
-html {height: 100%; width: 100%; margin: 0;  padding: 0; font-family: sans-serif;} 
-#canvas {height: 100%; width: 100%;}     
-#loading, 
-#error {position: absolute;top: 50%;left: 50%;transform: translate(-50%, -50%);font-size: 1.5em;color: #888;}#error {color: red;}
+#canvas {
+  height: 100%;
+  width: 100%;
+}
+
+#loading, #error {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.5em;
+  color: #888;
+}
+
+#error {
+  color: red;
+}
