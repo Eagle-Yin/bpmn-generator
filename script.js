@@ -1,4 +1,3 @@
-javascript
 // 初始化BPMN查看器
 const bpmnViewer = new BpmnJS({
 container: '#canvas'
@@ -43,5 +42,3 @@ document.addEventListener('DOMContentLoaded', () => {
         errorEl.textContent = 'No BPMN data provided in URL. Use ?bpmn=<encoded_xml>';
     }
 });
-```
-*   这段代码会获取URL中`bpmn`参数的值，进行解码，然后调用`bpmnViewer.importXML`方法来渲染流程图 <span data-key="32" class="reference-num" data-pages="undefined">362</span><span data-key="33" class="reference-num" data-pages="undefined">363</span>。
