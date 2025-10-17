@@ -3,175 +3,415 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BPMN 流程图查看器</title>
-    <!-- 引入 bpmn-js 的样式文件 -->
+    <title>BPMN 2.0 流程图查看器</title>
+    <!-- 引入最新版本的 bpmn-js CSS -->
     <link rel="stylesheet" href="https://unpkg.com/bpmn-js@17.0.2/dist/assets/bpmn-js.css">
+    <link rel="stylesheet" href="https://unpkg.com/bpmn-js@17.0.2/dist/assets/diagram-js.css">
     <style>
+        :root {
+            --primary-color: #1e88e5;
+            --success-color: #43a047;
+            --warning-color: #ffb300;
+            --error-color: #e53935;
+            --bg-light: #fafafa;
+            --text-primary: #212121;
+            --text-secondary: #757575;
+            --border-color: #e0e0e0;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
         body, html {
             height: 100%;
             margin: 0;
-            font-family: Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            color: var(--text-primary);
+            background-color: var(--bg-light);
             display: flex;
             flex-direction: column;
         }
-        #canvas {
-            flex-grow: 1;
-            border-bottom: 2px solid #ccc;
-        }
-        .header {
-            padding: 10px 20px;
-            background-color: #f5f5f5;
-            border-bottom: 1px solid #ddd;
+        
+        .app-header {
+            padding: 16px 24px;
+            background: white;
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             display: flex;
             align-items: center;
-            gap: 15px;
+            justify-content: space-between;
+            flex-shrink: 0;
         }
-        .header h1 {
-            margin: 0;
-            font-size: 1.2em;
+        
+        .app-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--primary-color);
         }
-        .buttons button {
-            padding: 8px 15px;
-            border: 1px solid #007bff;
-            background-color: #007bff;
-            color: white;
-            border-radius: 5px;
+        
+        .toolbar {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: 1px solid var(--border-color);
+            background: white;
+            color: var(--text-primary);
+            border-radius: 6px;
             cursor: pointer;
             font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
-        .buttons button:hover {
-            background-color: #0056b3;
+        
+        .btn:hover {
+            background: var(--bg-light);
+            border-color: var(--primary-color);
         }
-        #status {
-            padding: 10px 20px;
-            background-color: #fffbe6;
-            color: #8a6d3b;
-            text-align: center;
+        
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        
+        .btn-primary:hover {
+            background: #1976d2;
+            border-color: #1976d2;
+        }
+        
+        .status-bar {
+            padding: 12px 24px;
+            background: white;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-secondary);
+        }
+        
+        .status-indicator.loading {
+            background: var(--warning-color);
+            animation: pulse 1.5s infinite;
+        }
+        
+        .status-indicator.success {
+            background: var(--success-color);
+        }
+        
+        .status-indicator.error {
+            background: var(--error-color);
+        }
+        
+        .canvas-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: white;
+        }
+        
+        #canvas {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--bg-light);
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        @media (max-width: 768px) {
+            .app-header {
+                padding: 12px 16px;
+                flex-direction: column;
+                gap: 12px;
+                align-items: flex-start;
+            }
+            
+            .toolbar {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .btn {
+                flex: 1;
+                justify-content: center;
+            }
         }
     </style>
 </head>
 <body>
+    <header class="app-header">
+        <h1 class="app-title">BPMN 2.0 流程图查看器</h1>
+        <div class="toolbar">
+            <button id="download-svg" class="btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                </svg>
+                下载 SVG
+            </button>
+            <button id="download-bpmn" class="btn btn-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                </svg>
+                下载 BPMN
+            </button>
+        </div>
+    </header>
 
-    <div class="header">
-        <h1>BPMN 流程图预览</h1>
-        <div class="buttons">
-            <button id="download-svg">下载为 SVG</button>
-            <button id="download-bpmn">下载为 BPMN</button>
+    <div class="status-bar">
+        <div class="status-indicator loading"></div>
+        <span id="status-text">正在加载流程图...</span>
+    </div>
+
+    <div class="canvas-container">
+        <div id="canvas"></div>
+        <div class="loading-overlay" id="loading-overlay">
+            <div class="spinner"></div>
         </div>
     </div>
-    <div id="status">正在加载流程图...</div>
-    <div id="canvas"></div>
 
-    <!-- 引入 bpmn-js 库 -->
+    <!-- 引入最新版本的 bpmn-js 库 -->
     <script src="https://unpkg.com/bpmn-js@17.0.2/dist/bpmn-viewer.production.min.js"></script>
 
     <script>
+        // 严格模式确保代码质量
+        'use strict';
+
         // 1. 获取 DOM 元素
         const canvas = document.getElementById('canvas');
-        const statusDiv = document.getElementById('status');
+        const statusText = document.getElementById('status-text');
+        const statusIndicator = document.querySelector('.status-indicator');
+        const loadingOverlay = document.getElementById('loading-overlay');
         const downloadSvgButton = document.getElementById('download-svg');
         const downloadBpmnButton = document.getElementById('download-bpmn');
 
         // 2. 初始化 BpmnJS 查看器
-        // 详细的bpmn-js初始化方法可以参考其官方文档 [[184]][[190]]
         const bpmnViewer = new BpmnJS({
-            container: canvas
+            container: canvas,
+            // 配置查看器选项以确保更好的兼容性
+            keyboard: { bindTo: document },
+            additionalModules: []
         });
 
-        // 3. 从 URL 中获取并解码 BPMN XML 数据
-        let bpmnXML = '';
-        try {
-            const urlParams = new URLSearchParams(window.location.search);
-            const encodedXml = urlParams.get('xml');
-            if (!encodedXml) {
-                throw new Error('URL中未找到 "xml" 参数。');
+        // 3. 状态管理函数
+        function setStatus(type, message) {
+            statusIndicator.className = 'status-indicator ' + type;
+            statusText.textContent = message;
+            
+            switch (type) {
+                case 'loading':
+                    loadingOverlay.style.display = 'flex';
+                    break;
+                case 'success':
+                case 'error':
+                    loadingOverlay.style.display = 'none';
+                    break;
             }
-            // 使用 decodeURIComponent 解码
-            bpmnXML = decodeURIComponent(encodedXml);
-            if (bpmnXML.trim() === '') {
-                throw new Error('解码后的XML内容为空。');
-            }
-        } catch (error) {
-            console.error('获取或解码XML失败:', error);
-            statusDiv.textContent = `错误：无法加载流程图数据。原因：${error.message}`;
-            statusDiv.style.backgroundColor = '#f2dede';
-            statusDiv.style.color = '#a94442';
         }
 
-        // 4. 定义导入XML并渲染的函数
+        // 4. 从 URL 中获取并解码 BPMN XML 数据
+        function getBpmnXmlFromUrl() {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const encodedXml = urlParams.get('xml');
+                
+                if (!encodedXml) {
+                    throw new Error('URL中未找到BPMN XML参数。请确保URL包含"xml"参数。');
+                }
+                
+                // 使用 decodeURIComponent 解码
+                const decodedXml = decodeURIComponent(encodedXml);
+                
+                if (!decodedXml || decodedXml.trim() === '') {
+                    throw new Error('解码后的BPMN XML内容为空。');
+                }
+                
+                // 基本验证：确保包含BPMN必需的元素
+                if (!decodedXml.includes('bpmn:definitions') || !decodedXml.includes('bpmn:process')) {
+                    console.warn('BPMN XML可能缺少必需的标准元素');
+                }
+                
+                return decodedXml;
+            } catch (error) {
+                console.error('获取或解码BPMN XML失败:', error);
+                setStatus('error', `错误：${error.message}`);
+                return null;
+            }
+        }
+
+        // 5. 定义导入XML并渲染的函数
         async function importDiagram(xml) {
+            setStatus('loading', '正在渲染BPMN流程图...');
+            
             try {
-                // 使用 importXML 方法导入数据 [[62]][[67]][[101]]
-                const result = await bpmnViewer.importXML(xml);
-                const { warnings } = result;
-                if (warnings.length) {
-                    console.warn('导入过程中出现警告:', warnings);
-                    statusDiv.textContent = `流程图已加载，但存在警告信息（详情请查看控制台）。`;
-                    statusDiv.style.backgroundColor = '#fcf8e3';
+                // 使用 importXML 方法导入数据
+                const { warnings } = await bpmnViewer.importXML(xml);
+                
+                // 自动调整视图以适应画布
+                bpmnViewer.get('canvas').zoom('fit-viewport');
+                
+                // 处理警告信息
+                if (warnings && warnings.length > 0) {
+                    console.warn('BPMN导入警告:', warnings);
+                    setStatus('success', `流程图已加载完成（${warnings.length}个警告，详见控制台）。`);
                 } else {
-                    statusDiv.textContent = '流程图加载成功！';
-                    statusDiv.style.backgroundColor = '#dff0d8';
-                    statusDiv.style.color = '#3c763d';
+                    setStatus('success', 'BPMN 2.0流程图加载成功！');
                 }
-                // 让流程图居中并适应画布
-                bpmnViewer.get('canvas').zoom('fit-viewport', 'auto');
-            } catch (err) {
-                console.error('无法渲染BPMN XML:', err);
-                statusDiv.textContent = `错误：渲染流程图失败。请检查BPMN XML格式是否正确。错误详情：${err.message}`;
-                statusDiv.style.backgroundColor = '#f2dede';
-                statusDiv.style.color = '#a94442';
+                
+                // 启用下载按钮
+                downloadSvgButton.disabled = false;
+                downloadBpmnButton.disabled = false;
+                
+            } catch (error) {
+                console.error('无法渲染BPMN XML:', error);
+                setStatus('error', `错误：渲染BPMN流程图失败。请检查BPMN 2.0 XML格式是否正确。详情：${error.message}`);
+                
+                // 禁用下载按钮
+                downloadSvgButton.disabled = true;
+                downloadBpmnButton.disabled = true;
             }
         }
 
-        // 5. 定义下载功能的函数
-        async function download(type) {
+        // 6. 定义下载功能的函数
+        async function downloadDiagram(type) {
             try {
+                let content, filename, contentType;
+                
                 if (type === 'svg') {
-                    // 使用 saveSVG API [[101]] 中有类似导出XML的API)
                     const { svg } = await bpmnViewer.saveSVG();
-                    triggerDownload(svg, '流程图.svg', 'image/svg+xml');
+                    content = svg;
+                    filename = 'bpmn-diagram.svg';
+                    contentType = 'image/svg+xml';
                 } else if (type === 'bpmn') {
-                    // 使用 saveXML API
-                    const { xml } = await bpmnViewer.saveXML({ format: true });
-                    triggerDownload(xml, '流程图.bpmn', 'application/xml');
+                    const { xml } = await bpmnViewer.saveXML({ 
+                        format: true, // 格式化输出
+                        preamble: true // 包含XML声明
+                    });
+                    content = xml;
+                    filename = 'bpmn-diagram.bpmn';
+                    contentType = 'application/xml';
                 }
-            } catch (err) {
-                console.error(`下载 ${type} 文件失败:`, err);
-                alert(`无法下载文件，详情请查看控制台。`);
+                
+                triggerDownload(content, filename, contentType);
+                
+            } catch (error) {
+                console.error(`下载${type}文件失败:`, error);
+                setStatus('error', `下载失败：${error.message}`);
             }
         }
 
         function triggerDownload(content, filename, contentType) {
-            const a = document.createElement('a');
             const blob = new Blob([content], { type: contentType });
-            a.href = URL.createObjectURL(blob);
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
             a.download = filename;
+            a.style.display = 'none';
+            
             document.body.appendChild(a);
             a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(a.href);
+            
+            // 清理
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 100);
         }
 
-        // 6. 绑定事件监听
-        downloadSvgButton.addEventListener('click', () => download('svg'));
-        downloadBpmnButton.addEventListener('click', () => download('bpmn'));
+        // 7. 绑定事件监听器
+        downloadSvgButton.addEventListener('click', () => downloadDiagram('svg'));
+        downloadBpmnButton.addEventListener('click', () => downloadDiagram('bpmn'));
         
-        // 7. 执行渲染
-        if (bpmnXML) {
-            importDiagram(bpmnXML);
-        } else {
-            // 如果没有XML，显示一个默认的空图或提示
-            const defaultXml = `<?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
+        // 添加窗口调整大小时的重绘处理
+        window.addEventListener('resize', () => {
+            if (bpmnViewer) {
+                setTimeout(() => {
+                    bpmnViewer.get('canvas').resized();
+                }, 100);
+            }
+        });
+
+        // 8. 初始化应用
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 初始禁用下载按钮
+            downloadSvgButton.disabled = true;
+            downloadBpmnButton.disabled = true;
+            
+            // 获取并渲染BPMN
+            const bpmnXml = getBpmnXmlFromUrl();
+            
+            if (bpmnXml) {
+                await importDiagram(bpmnXml);
+            } else {
+                // 如果没有提供XML，显示默认空画布
+                const defaultXml = `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" 
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" 
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" 
+                  id="Definitions_1" 
+                  targetNamespace="http://bpmn.io/schema/bpmn">
   <bpmn:process id="Process_1" isExecutable="false" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1" />
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>`;
-            importDiagram(defaultXml);
-            statusDiv.textContent = '未提供流程数据，已显示空画布。';
-        }
+                
+                await importDiagram(defaultXml);
+                setStatus('warning', '未提供BPMN流程数据，已显示空画布。');
+            }
+        });
 
+        // 错误处理
+        window.addEventListener('error', (event) => {
+            console.error('全局错误:', event.error);
+            setStatus('error', `应用程序错误：${event.message}`);
+        });
     </script>
 </body>
 </html>
