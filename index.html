@@ -1,1 +1,177 @@
-<!DOCTYPE html> <html lang="zh-CN"> <head> <meta charset="UTF-8"> <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>BPMN 流程图查看器</title> <!-- 引入 bpmn-js 的样式文件 --> <link rel="stylesheet" href="https://unpkg.com/bpmn-js@17.0.2/dist/assets/bpmn-js.css"> <style> body, html { height: 100%; margin: 0; font-family: Arial, sans-serif; display: flex; flex-direction: column; } #canvas { flex-grow: 1; border-bottom: 2px solid #ccc; } .header { padding: 10px 20px; background-color: #f5f5f5; border-bottom: 1px solid #ddd; display: flex; align-items: center; gap: 15px; } .header h1 { margin: 0; font-size: 1.2em; } .buttons button { padding: 8px 15px; border: 1px solid #007bff; background-color: #007bff; color: white; border-radius: 5px; cursor: pointer; font-size: 14px; } .buttons button:hover { background-color: #0056b3; } #status { padding: 10px 20px; background-color: #fffbe6; color: #8a6d3b; text-align: center; } </style> </head> <body> <div class="header"> <h1>BPMN 流程图预览</h1> <div class="buttons"> <button id="download-svg">下载为 SVG</button> <button id="download-bpmn">下载为 BPMN</button> </div> </div> <div id="status">正在加载流程图...</div> <div id="canvas"></div> <!-- 引入 bpmn-js 库 --> <script src="https://unpkg.com/bpmn-js@17.0.2/dist/bpmn-viewer.production.min.js"></script> <script> // 1. 获取 DOM 元素 const canvas = document.getElementById('canvas'); const statusDiv = document.getElementById('status'); const downloadSvgButton = document.getElementById('download-svg'); const downloadBpmnButton = document.getElementById('download-bpmn'); // 2. 初始化 BpmnJS 查看器 const bpmnViewer = new BpmnJS({ container: canvas }); // 3. 从 URL 中获取并解码 BPMN XML 数据 let bpmnXML = ''; try { const urlParams = new URLSearchParams(window.location.search); const encodedXml = urlParams.get('xml'); if (!encodedXml) { throw new Error('URL中未找到 "xml" 参数。'); } // 使用 decodeURIComponent 解码 bpmnXML = decodeURIComponent(encodedXml); if (bpmnXML.trim() === '') { throw new Error('解码后的XML内容为空。'); } } catch (error) { console.error('获取或解码XML失败:', error); statusDiv.textContent = `错误：无法加载流程图数据。原因：${error.message}`; statusDiv.style.backgroundColor = '#f2dede'; statusDiv.style.color = '#a94442'; } // 4. 定义导入XML并渲染的函数 async function importDiagram(xml) { try { // 使用 importXML 方法导入数据 const result = await bpmnViewer.importXML(xml); const { warnings } = result; if (warnings.length) { console.warn('导入过程中出现警告:', warnings); statusDiv.textContent = `流程图已加载，但存在警告信息（详情请查看控制台）。`; statusDiv.style.backgroundColor = '#fcf8e3'; } else { statusDiv.textContent = '流程图加载成功！'; statusDiv.style.backgroundColor = '#dff0d8'; statusDiv.style.color = '#3c763d'; } // 让流程图居中并适应画布 bpmnViewer.get('canvas').zoom('fit-viewport', 'auto'); } catch (err) { console.error('无法渲染BPMN XML:', err); statusDiv.textContent = `错误：渲染流程图失败。请检查BPMN XML格式是否正确。错误详情：${err.message}`; statusDiv.style.backgroundColor = '#f2dede'; statusDiv.style.color = '#a94442'; } } // 5. 定义下载功能的函数 async function download(type) { try { if (type === 'svg') { // 使用 saveSVG API const { svg } = await bpmnViewer.saveSVG(); triggerDownload(svg, '流程图.svg', 'image/svg+xml'); } else if (type === 'bpmn') { // 使用 saveXML API const { xml } = await bpmnViewer.saveXML({ format: true }); triggerDownload(xml, '流程图.bpmn', 'application/xml'); } } catch (err) { console.error(`下载 ${type} 文件失败:`, err); alert(`无法下载文件，详情请查看控制台。`); } } function triggerDownload(content, filename, contentType) { const a = document.createElement('a'); const blob = new Blob([content], { type: contentType }); a.href = URL.createObjectURL(blob); a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(a.href); } // 6. 绑定事件监听 downloadSvgButton.addEventListener('click', () => download('svg')); downloadBpmnButton.addEventListener('click', () => download('bpmn')); // 7. 执行渲染 if (bpmnXML) { importDiagram(bpmnXML); } else { // 如果没有XML，显示一个默认的空图或提示 const defaultXml = `<?xml version="1.0" encoding="UTF-8"?> <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"> <bpmn:process id="Process_1" isExecutable="false" /> <bpmndi:BPMNDiagram id="BPMNDiagram_1"> <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1" /> </bpmndi:BPMNDiagram> </bpmn:definitions>`; importDiagram(defaultXml); statusDiv.textContent = '未提供流程数据，已显示空画布。'; } </script> </body> </html>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BPMN 流程图查看器</title>
+    <!-- 引入 bpmn-js 的样式文件 -->
+    <link rel="stylesheet" href="https://unpkg.com/bpmn-js@17.0.2/dist/assets/bpmn-js.css">
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+        }
+        #canvas {
+            flex-grow: 1;
+            border-bottom: 2px solid #ccc;
+        }
+        .header {
+            padding: 10px 20px;
+            background-color: #f5f5f5;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 1.2em;
+        }
+        .buttons button {
+            padding: 8px 15px;
+            border: 1px solid #007bff;
+            background-color: #007bff;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .buttons button:hover {
+            background-color: #0056b3;
+        }
+        #status {
+            padding: 10px 20px;
+            background-color: #fffbe6;
+            color: #8a6d3b;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>BPMN 流程图预览</h1>
+        <div class="buttons">
+            <button id="download-svg">下载为 SVG</button>
+            <button id="download-bpmn">下载为 BPMN</button>
+        </div>
+    </div>
+    <div id="status">正在加载流程图...</div>
+    <div id="canvas"></div>
+
+    <!-- 引入 bpmn-js 库 -->
+    <script src="https://unpkg.com/bpmn-js@17.0.2/dist/bpmn-viewer.production.min.js"></script>
+
+    <script>
+        // 1. 获取 DOM 元素
+        const canvas = document.getElementById('canvas');
+        const statusDiv = document.getElementById('status');
+        const downloadSvgButton = document.getElementById('download-svg');
+        const downloadBpmnButton = document.getElementById('download-bpmn');
+
+        // 2. 初始化 BpmnJS 查看器
+        // 详细的bpmn-js初始化方法可以参考其官方文档 [[184]][[190]]
+        const bpmnViewer = new BpmnJS({
+            container: canvas
+        });
+
+        // 3. 从 URL 中获取并解码 BPMN XML 数据
+        let bpmnXML = '';
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const encodedXml = urlParams.get('xml');
+            if (!encodedXml) {
+                throw new Error('URL中未找到 "xml" 参数。');
+            }
+            // 使用 decodeURIComponent 解码
+            bpmnXML = decodeURIComponent(encodedXml);
+            if (bpmnXML.trim() === '') {
+                throw new Error('解码后的XML内容为空。');
+            }
+        } catch (error) {
+            console.error('获取或解码XML失败:', error);
+            statusDiv.textContent = `错误：无法加载流程图数据。原因：${error.message}`;
+            statusDiv.style.backgroundColor = '#f2dede';
+            statusDiv.style.color = '#a94442';
+        }
+
+        // 4. 定义导入XML并渲染的函数
+        async function importDiagram(xml) {
+            try {
+                // 使用 importXML 方法导入数据 [[62]][[67]][[101]]
+                const result = await bpmnViewer.importXML(xml);
+                const { warnings } = result;
+                if (warnings.length) {
+                    console.warn('导入过程中出现警告:', warnings);
+                    statusDiv.textContent = `流程图已加载，但存在警告信息（详情请查看控制台）。`;
+                    statusDiv.style.backgroundColor = '#fcf8e3';
+                } else {
+                    statusDiv.textContent = '流程图加载成功！';
+                    statusDiv.style.backgroundColor = '#dff0d8';
+                    statusDiv.style.color = '#3c763d';
+                }
+                // 让流程图居中并适应画布
+                bpmnViewer.get('canvas').zoom('fit-viewport', 'auto');
+            } catch (err) {
+                console.error('无法渲染BPMN XML:', err);
+                statusDiv.textContent = `错误：渲染流程图失败。请检查BPMN XML格式是否正确。错误详情：${err.message}`;
+                statusDiv.style.backgroundColor = '#f2dede';
+                statusDiv.style.color = '#a94442';
+            }
+        }
+
+        // 5. 定义下载功能的函数
+        async function download(type) {
+            try {
+                if (type === 'svg') {
+                    // 使用 saveSVG API [[101]] 中有类似导出XML的API)
+                    const { svg } = await bpmnViewer.saveSVG();
+                    triggerDownload(svg, '流程图.svg', 'image/svg+xml');
+                } else if (type === 'bpmn') {
+                    // 使用 saveXML API
+                    const { xml } = await bpmnViewer.saveXML({ format: true });
+                    triggerDownload(xml, '流程图.bpmn', 'application/xml');
+                }
+            } catch (err) {
+                console.error(`下载 ${type} 文件失败:`, err);
+                alert(`无法下载文件，详情请查看控制台。`);
+            }
+        }
+
+        function triggerDownload(content, filename, contentType) {
+            const a = document.createElement('a');
+            const blob = new Blob([content], { type: contentType });
+            a.href = URL.createObjectURL(blob);
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(a.href);
+        }
+
+        // 6. 绑定事件监听
+        downloadSvgButton.addEventListener('click', () => download('svg'));
+        downloadBpmnButton.addEventListener('click', () => download('bpmn'));
+        
+        // 7. 执行渲染
+        if (bpmnXML) {
+            importDiagram(bpmnXML);
+        } else {
+            // 如果没有XML，显示一个默认的空图或提示
+            const defaultXml = `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="Process_1" isExecutable="false" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1" />
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>`;
+            importDiagram(defaultXml);
+            statusDiv.textContent = '未提供流程数据，已显示空画布。';
+        }
+
+    </script>
+</body>
+</html>
