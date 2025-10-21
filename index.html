@@ -1,22 +1,28 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BPMN流程图查看器</title>
-    <!-- 引入bpmn-js的样式文件 -->
-    <link rel="stylesheet" href="https://unpkg.com/bpmn-js@17.0.2/dist/assets/bpmn-js.css">
+    <title>BPMN 流程图生成器</title>
     <link rel="stylesheet" href="style.css">
+    <!-- 引入 bpmn-js 样式 -->
+    <link rel="stylesheet" href="https://unpkg.com/bpmn-js@17.0.2/dist/assets/bpmn-js.css">
 </head>
 <body>
+    <div id="header">
+        <h1>BPMN 流程图</h1>
+        <div id="buttons">
+            <button id="download-xml">下载 BPMN (XML)</button>
+            <button id="download-svg">下载流程图 (SVG)</button>
+        </div>
+    </div>
     <div id="canvas"></div>
-    <div id="controls">
-        <button id="download-xml">下载BPMN (XML)</button>
-        <button id="download-svg">下载流程图 (SVG)</button>
+    <div id="footer">
+        由 COZE 流程设计专家 & bpmn.js 强力驱动
     </div>
 
-    <!-- 引入bpmn-js库 -->
-    <script src="https://unpkg.com/bpmn-js@17.0.2/dist/bpmn-viewer.development.js"></script>
-    <script src="main.js"></script>
+    <!-- 引入 bpmn-js 库 -->
+    <script src="https://unpkg.com/bpmn-js@17.0.2/dist/bpmn-modeler.development.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
