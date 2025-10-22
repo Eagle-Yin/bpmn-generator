@@ -3,26 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BPMN 流程图生成器</title>
-    <link rel="stylesheet" href="style.css">
-    <!-- 引入 bpmn-js 样式 -->
-    <link rel="stylesheet" href="https://unpkg.com/bpmn-js@17.0.2/dist/assets/bpmn-js.css">
+    <title>BPMN 流程图查看器</title>
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; font-family: sans-serif; }
+        #canvas { height: 90vh; border-bottom: 1px solid #ccc; }
+        .buttons { padding: 10px; text-align: center; }
+        .buttons button { padding: 8px 15px; margin: 0 10px; cursor: pointer; }
+        #loading { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); font-size: 1.2em; }
+    </style>
+    <!-- 引入BPMN.JS库 -->
+    <script src="https://unpkg.com/bpmn-js/dist/bpmn-viewer.development.js"></script>
 </head>
 <body>
-    <div id="header">
-        <h1>BPMN 流程图</h1>
-        <div id="buttons">
-            <button id="download-xml">下载 BPMN (XML)</button>
-            <button id="download-svg">下载流程图 (SVG)</button>
-        </div>
-    </div>
+    <div id="loading">正在加载流程图...</div>
     <div id="canvas"></div>
-    <div id="footer">
-        由 COZE 流程设计专家 & bpmn.js 强力驱动
+    <div class="buttons">
+        <button id="download-bpmn">下载 BPMN 文件</button>
+        <button id="download-svg">下载 SVG 图像</button>
     </div>
 
-    <!-- 引入 bpmn-js 库 -->
-    <script src="https://unpkg.com/bpmn-js@17.0.2/dist/bpmn-modeler.development.js"></script>
+    <!-- 引入我们自己的逻辑脚本 -->
     <script src="script.js"></script>
 </body>
 </html>
