@@ -3,21 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BPMN 流程图查看器 - JD智能体生成</title>
+    <title>BPMN 流程图查看器</title>
     <link rel="stylesheet" href="https://unpkg.com/bpmn-js@17.0.2/dist/assets/bpmn-js.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root {
-            --primary-color: #3498db;
-            --secondary-color: #2c3e50;
-            --success-color: #2ecc71;
-            --warning-color: #f39c12;
-            --danger-color: #e74c3c;
-            --light-bg: #f8f9fa;
-            --dark-bg: #343a40;
-            --border-color: #dee2e6;
-        }
-        
         * {
             margin: 0;
             padding: 0;
@@ -26,7 +14,7 @@
         
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--light-bg);
+            background-color: #f8f9fa;
             color: #333;
             line-height: 1.6;
             display: flex;
@@ -35,7 +23,7 @@
         }
         
         .header {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            background: linear-gradient(135deg, #3498db, #2c3e50);
             color: white;
             padding: 1.5rem;
             text-align: center;
@@ -60,7 +48,7 @@
         }
         
         .sidebar {
-            width: 300px;
+            width: 280px;
             background-color: white;
             padding: 1.5rem;
             box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
@@ -77,7 +65,7 @@
         .toolbar {
             padding: 1rem;
             background-color: white;
-            border-bottom: 1px solid var(--border-color);
+            border-bottom: 1px solid #dee2e6;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -90,7 +78,7 @@
             align-items: center;
             gap: 0.5rem;
             padding: 0.6rem 1.2rem;
-            background-color: var(--primary-color);
+            background-color: #3498db;
             color: white;
             border: none;
             border-radius: 6px;
@@ -106,7 +94,7 @@
         }
         
         .btn-success {
-            background-color: var(--success-color);
+            background-color: #2ecc71;
         }
         
         .canvas-container {
@@ -141,7 +129,7 @@
             height: 50px;
             border: 5px solid rgba(52, 152, 219, 0.3);
             border-radius: 50%;
-            border-top-color: var(--primary-color);
+            border-top-color: #3498db;
             animation: spin 1s ease-in-out infinite;
             margin-bottom: 1rem;
         }
@@ -162,7 +150,7 @@
         
         .error-icon {
             font-size: 3rem;
-            color: var(--danger-color);
+            color: #e74c3c;
             margin-bottom: 1rem;
         }
         
@@ -176,8 +164,8 @@
         
         .info-panel h3 {
             margin-bottom: 1rem;
-            color: var(--secondary-color);
-            border-bottom: 2px solid var(--primary-color);
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
             padding-bottom: 0.5rem;
         }
         
@@ -199,10 +187,6 @@
         .gateway { background-color: #f39c12; }
         .end-event { background-color: #e74c3c; }
         
-        .help-section {
-            margin-top: auto;
-        }
-        
         .zoom-controls {
             display: flex;
             gap: 0.5rem;
@@ -215,25 +199,25 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background-color: var(--light-bg);
-            border: 1px solid var(--border-color);
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
             border-radius: 6px;
             cursor: pointer;
         }
         
         .zoom-btn:hover {
-            background-color: var(--primary-color);
+            background-color: #3498db;
             color: white;
         }
         
         .footer {
             text-align: center;
             padding: 1.5rem;
-            background-color: var(--dark-bg);
+            background-color: #343a40;
             color: white;
         }
         
-        /* URL显示优化 */
+        /* URL显示优化 - 使用CSS隐藏文本技术 */
         .url-display {
             margin: 1rem 0;
             padding: 0.75rem;
@@ -253,6 +237,25 @@
             flex: 1;
             margin-right: 0.5rem;
             color: #6c757d;
+            position: relative;
+            padding-right: 1.5em; /* 为图标预留空间 */
+        }
+        
+        /* 使用CSS隐藏长链接文本，显示为图标 */
+        .url-text:not(:hover) {
+            text-indent: -9999px; /* 将文本推出可视区域 */
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        
+        .url-text::after {
+            content: '🔗'; /* 使用链接图标代替文本 */
+            font-size: 0.9em;
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            text-indent: 0; /* 重置文本缩进 */
         }
         
         .url-action {
@@ -263,7 +266,7 @@
         .copy-btn {
             background: none;
             border: none;
-            color: var(--primary-color);
+            color: #3498db;
             cursor: pointer;
             font-size: 0.9rem;
             padding: 0.25rem 0.5rem;
@@ -299,11 +302,11 @@
         }
         
         .toast-success {
-            background-color: var(--success-color);
+            background-color: #2ecc71;
         }
         
         .toast-error {
-            background-color: var(--danger-color);
+            background-color: #e74c3c;
         }
         
         @media (max-width: 992px) {
@@ -334,33 +337,33 @@
 </head>
 <body>
     <div class="header">
-        <h1><i class="fas fa-project-diagram"></i> BPMN 流程图查看器</h1>
-        <p>由 JD AI 智能体生成的专业业务流程模型</p>
+        <h1>BPMN 流程图查看器</h1>
+        <p>由 COZE AI 智能体生成的专业业务流程模型</p>
     </div>
     
     <div class="container">
         <div class="sidebar">
             <div class="info-panel">
-                <h3><i class="fas fa-info-circle"></i> 流程图信息</h3>
+                <h3>流程图信息</h3>
                 <div id="diagram-info">
                     <p>正在加载流程图信息...</p>
                 </div>
                 
-                <!-- URL显示区域 -->
+                <!-- URL显示区域 - 使用CSS隐藏文本优化 -->
                 <div class="url-display">
-                    <div class="url-text" id="url-display-text">
+                    <div class="url-text" id="url-display-text" title="悬停查看完整URL">
                         加载中...
                     </div>
                     <div class="url-action">
                         <button class="copy-btn" id="copy-url-btn" title="复制链接">
-                            <i class="fas fa-copy"></i>
+                            📋
                         </button>
                     </div>
                 </div>
             </div>
             
             <div class="info-panel">
-                <h3><i class="fas fa-shapes"></i> 图例说明</h3>
+                <h3>图例说明</h3>
                 <div class="legend-item">
                     <div class="legend-color start-event"></div>
                     <div>开始事件</div>
@@ -378,29 +381,22 @@
                     <div>结束事件</div>
                 </div>
             </div>
-            
-            <div class="info-panel help-section">
-                <h3><i class="fas fa-question-circle"></i> 使用帮助</h3>
-                <p>使用鼠标拖拽可以移动画布，滚轮可以缩放视图。</p>
-                <p>点击下方按钮可以下载BPMN文件或SVG图像。</p>
-            </div>
         </div>
         
         <div class="main-content">
             <div class="toolbar">
                 <div class="zoom-controls">
-                    <button class="zoom-btn" id="zoom-in" title="放大"><i class="fas fa-search-plus"></i></button>
-                    <button class="zoom-btn" id="zoom-out" title="缩小"><i class="fas fa-search-minus"></i></button>
-                    <button class="zoom-btn" id="zoom-fit" title="适应窗口"><i class="fas fa-expand"></i></button>
-                    <button class="zoom-btn" id="zoom-actual" title="实际大小"><i class="fas fa-desktop"></i></button>
+                    <button class="zoom-btn" id="zoom-in" title="放大">+</button>
+                    <button class="zoom-btn" id="zoom-out" title="缩小">-</button>
+                    <button class="zoom-btn" id="zoom-fit" title="适应窗口">⤢</button>
                 </div>
                 
                 <div>
                     <button class="btn" id="download-bpmn">
-                        <i class="fas fa-download"></i> 下载 BPMN
+                        下载 BPMN
                     </button>
                     <button class="btn btn-success" id="download-svg">
-                        <i class="fas fa-image"></i> 下载 SVG
+                        下载 SVG
                     </button>
                 </div>
             </div>
@@ -417,26 +413,23 @@
     </div>
     
     <div class="error-container" id="error-container">
-        <div class="error-icon">
-            <i class="fas fa-exclamation-triangle"></i>
-        </div>
+        <div class="error-icon">⚠️</div>
         <h3>加载流程图失败</h3>
         <p id="error-message"></p>
         <div style="margin-top: 1.5rem;">
             <button class="btn" id="retry-button">
-                <i class="fas fa-redo"></i> 重新尝试
+                重新尝试
             </button>
         </div>
     </div>
     
     <!-- Toast通知 -->
     <div class="toast" id="toast">
-        <i class="fas fa-check-circle"></i>
         <span id="toast-message">操作成功</span>
     </div>
     
     <div class="footer">
-        <p>Powered by JD AI Agent & BPMN.js | © 2023 智能业务流程设计</p>
+        <p>Powered by BPMN.js | 专注于BPMN流程图解析与展示</p>
     </div>
 
     <!-- 引入 bpmn-js 库 -->
@@ -445,7 +438,6 @@
     <script>
         // 全局变量
         let bpmnViewer;
-        let currentZoom = 1;
         
         // DOM 元素
         const canvas = document.getElementById('canvas');
@@ -491,7 +483,6 @@
             document.getElementById('zoom-in').addEventListener('click', () => adjustZoom(0.2));
             document.getElementById('zoom-out').addEventListener('click', () => adjustZoom(-0.2));
             document.getElementById('zoom-fit').addEventListener('click', fitViewport);
-            document.getElementById('zoom-actual').addEventListener('click', resetZoom);
             
             // 重试按钮
             retryButton.addEventListener('click', renderBPMN);
@@ -500,13 +491,14 @@
             copyUrlBtn.addEventListener('click', copyUrlToClipboard);
         }
         
-        // 更新URL显示
+        // 更新URL显示 - 使用CSS隐藏文本技术
         function updateUrlDisplay() {
             const currentUrl = window.location.href;
             
-            // 如果有URL参数，显示简洁版本
+            // 设置URL显示文本
             if (currentUrl.includes('?')) {
                 const baseUrl = currentUrl.split('?')[0];
+                // 使用CSS隐藏长URL，显示为链接图标
                 urlDisplayText.textContent = `${baseUrl}?...[BPMN数据]`;
                 urlDisplayText.title = currentUrl; // 鼠标悬停时显示完整URL
             } else {
@@ -532,10 +524,8 @@
             
             if (type === 'success') {
                 toast.classList.add('toast-success');
-                toast.querySelector('i').className = 'fas fa-check-circle';
             } else {
                 toast.classList.add('toast-error');
-                toast.querySelector('i').className = 'fas fa-exclamation-circle';
             }
             
             toast.classList.add('show');
@@ -551,7 +541,38 @@
             hideError();
             showLoading();
             
-            // 1. 获取URL参数
-            const urlParams = new URLSearchParams(window.location.search);
-            const bpmnDataBase64 =
+            try {
+                // 1. 获取URL参数
+                const urlParams = new URLSearchParams(window.location.search);
+                const bpmnDataBase64 = urlParams.get('bpmn');
+                
+                if (!bpmnDataBase64) {
+                    throw new Error("未找到BPMN数据参数。请确保URL中包含bpmn参数");
+                }
+                
+                // 2. 解码Base64字符串
+                let bpmnXML;
+                try {
+                    bpmnXML = atob(bpmnDataBase64);
+                } catch (decodeError) {
+                    throw new Error("Base64解码失败: " + decodeError.message);
+                }
+                
+                if (!bpmnXML || bpmnXML.trim() === '') {
+                    throw new Error("解码后的BPMN XML为空");
+                }
+                
+                // 3. 导入并渲染XML
+                try {
+                    await bpmnViewer.importXML(bpmnXML);
+                    
+                    // 4. 调整视图
+                    fitViewport();
+                    
+                    // 5. 隐藏加载界面
+                    hideLoading();
+                    
+                } catch (importError) {
+                    console.error('BPMN XML导入错误:', importError);
+                    throw new Error("BPMN XML解析失败: " + importError.message
 <span style='font-size:12px'>[AI生成]</span>
