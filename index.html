@@ -162,7 +162,7 @@
             const getBpmnXmlFromUrl = async () => {
                 const params = new URLSearchParams(window.location.search);
                 const bpmnUrl = params.get('url');
-                const bpmnXml = params.get('xml');
+                const bpmnXml = params.get('bpmn');
 
                 if (bpmnUrl) {
                     showMessage('正在从远程地址获取流程图...');
