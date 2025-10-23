@@ -109,14 +109,6 @@
             background-color: var(--success-color);
         }
         
-        .btn-warning {
-            background-color: var(--warning-color);
-        }
-        
-        .btn-danger {
-            background-color: var(--danger-color);
-        }
-        
         .canvas-container {
             flex: 1;
             position: relative;
@@ -241,7 +233,7 @@
             color: white;
         }
         
-        /* URL显示优化 - 核心改进 */
+        /* URL显示优化 */
         .url-display {
             margin: 1rem 0;
             padding: 0.75rem;
@@ -354,7 +346,7 @@
                     <p>正在加载流程图信息...</p>
                 </div>
                 
-                <!-- URL显示区域 - 优化用户体验 -->
+                <!-- URL显示区域 -->
                 <div class="url-display">
                     <div class="url-text" id="url-display-text">
                         加载中...
@@ -391,7 +383,6 @@
                 <h3><i class="fas fa-question-circle"></i> 使用帮助</h3>
                 <p>使用鼠标拖拽可以移动画布，滚轮可以缩放视图。</p>
                 <p>点击下方按钮可以下载BPMN文件或SVG图像。</p>
-                <p>上方链接可复制分享，不会显示冗长的URL参数。</p>
             </div>
         </div>
         
@@ -411,9 +402,6 @@
                     <button class="btn btn-success" id="download-svg">
                         <i class="fas fa-image"></i> 下载 SVG
                     </button>
-                    <a href="#" class="btn btn-warning" id="new-diagram">
-                        <i class="fas fa-plus"></i> 新建流程图
-                    </a>
                 </div>
             </div>
             
@@ -475,7 +463,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             initializeViewer();
             setupEventListeners();
-            updateUrlDisplay(); // 初始化URL显示
+            updateUrlDisplay();
             renderBPMN();
         });
         
@@ -510,22 +498,16 @@
             
             // 复制URL按钮
             copyUrlBtn.addEventListener('click', copyUrlToClipboard);
-            
-            // 新建流程图按钮
-            document.getElementById('new-diagram').addEventListener('click', function(e) {
-                e.preventDefault();
-                window.location.href = 'https://www.JD.com'; // 替换为实际的JD平台地址
-            });
         }
         
-        // 更新URL显示 - 核心优化：隐藏长参数
+        // 更新URL显示
         function updateUrlDisplay() {
             const currentUrl = window.location.href;
             
             // 如果有URL参数，显示简洁版本
             if (currentUrl.includes('?')) {
                 const baseUrl = currentUrl.split('?')[0];
-                urlDisplayText.textContent = `${baseUrl}?...[参数已隐藏]`;
+                urlDisplayText.textContent = `${baseUrl}?...[BPMN数据]`;
                 urlDisplayText.title = currentUrl; // 鼠标悬停时显示完整URL
             } else {
                 urlDisplayText.textContent = currentUrl;
@@ -549,5 +531,27 @@
             toast.className = 'toast';
             
             if (type === 'success') {
-                toast.classList.add('to
+                toast.classList.add('toast-success');
+                toast.querySelector('i').className = 'fas fa-check-circle';
+            } else {
+                toast.classList.add('toast-error');
+                toast.querySelector('i').className = 'fas fa-exclamation-circle';
+            }
+            
+            toast.classList.add('show');
+            
+            // 3秒后隐藏
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+        
+        // 渲染BPMN流程图 - 核心功能
+        async function renderBPMN() {
+            hideError();
+            showLoading();
+            
+            // 1. 获取URL参数
+            const urlParams = new URLSearchParams(window.location.search);
+            const bpmnDataBase64 =
 <span style='font-size:12px'>[AI生成]</span>
