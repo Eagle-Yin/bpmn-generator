@@ -241,6 +241,79 @@
             color: white;
         }
         
+        /* URL显示优化 - 核心改进 */
+        .url-display {
+            margin: 1rem 0;
+            padding: 0.75rem;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .url-text {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+            margin-right: 0.5rem;
+            color: #6c757d;
+        }
+        
+        .url-action {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .copy-btn {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            cursor: pointer;
+            font-size: 0.9rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+        }
+        
+        .copy-btn:hover {
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+        
+        /* Toast通知 */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            background-color: #333;
+            color: white;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            z-index: 1000;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.3s, transform 0.3s;
+        }
+        
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .toast-success {
+            background-color: var(--success-color);
+        }
+        
+        .toast-error {
+            background-color: var(--danger-color);
+        }
+        
         @media (max-width: 992px) {
             .container {
                 flex-direction: column;
@@ -253,6 +326,16 @@
             
             .main-content {
                 order: 1;
+            }
+            
+            .url-display {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+            
+            .url-action {
+                align-self: flex-end;
             }
         }
     </style>
@@ -269,6 +352,18 @@
                 <h3><i class="fas fa-info-circle"></i> 流程图信息</h3>
                 <div id="diagram-info">
                     <p>正在加载流程图信息...</p>
+                </div>
+                
+                <!-- URL显示区域 - 优化用户体验 -->
+                <div class="url-display">
+                    <div class="url-text" id="url-display-text">
+                        加载中...
+                    </div>
+                    <div class="url-action">
+                        <button class="copy-btn" id="copy-url-btn" title="复制链接">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
             
@@ -296,6 +391,7 @@
                 <h3><i class="fas fa-question-circle"></i> 使用帮助</h3>
                 <p>使用鼠标拖拽可以移动画布，滚轮可以缩放视图。</p>
                 <p>点击下方按钮可以下载BPMN文件或SVG图像。</p>
+                <p>上方链接可复制分享，不会显示冗长的URL参数。</p>
             </div>
         </div>
         
@@ -345,6 +441,12 @@
         </div>
     </div>
     
+    <!-- Toast通知 -->
+    <div class="toast" id="toast">
+        <i class="fas fa-check-circle"></i>
+        <span id="toast-message">操作成功</span>
+    </div>
+    
     <div class="footer">
         <p>Powered by JD AI Agent & BPMN.js | © 2023 智能业务流程设计</p>
     </div>
@@ -364,11 +466,16 @@
         const errorMessageElem = document.getElementById('error-message');
         const retryButton = document.getElementById('retry-button');
         const diagramInfo = document.getElementById('diagram-info');
+        const urlDisplayText = document.getElementById('url-display-text');
+        const copyUrlBtn = document.getElementById('copy-url-btn');
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toast-message');
         
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
             initializeViewer();
             setupEventListeners();
+            updateUrlDisplay(); // 初始化URL显示
             renderBPMN();
         });
         
@@ -401,6 +508,9 @@
             // 重试按钮
             retryButton.addEventListener('click', renderBPMN);
             
+            // 复制URL按钮
+            copyUrlBtn.addEventListener('click', copyUrlToClipboard);
+            
             // 新建流程图按钮
             document.getElementById('new-diagram').addEventListener('click', function(e) {
                 e.preventDefault();
@@ -408,120 +518,36 @@
             });
         }
         
-        // 渲染BPMN流程图
-        async function renderBPMN() {
-            hideError();
-            showLoading();
+        // 更新URL显示 - 核心优化：隐藏长参数
+        function updateUrlDisplay() {
+            const currentUrl = window.location.href;
             
-            // 1. 获取URL参数
-            const urlParams = new URLSearchParams(window.location.search);
-            const gistId = urlParams.get('gist');
-            const bpmnDataBase64 = urlParams.get('bpmn');
+            // 如果有URL参数，显示简洁版本
+            if (currentUrl.includes('?')) {
+                const baseUrl = currentUrl.split('?')[0];
+                urlDisplayText.textContent = `${baseUrl}?...[参数已隐藏]`;
+                urlDisplayText.title = currentUrl; // 鼠标悬停时显示完整URL
+            } else {
+                urlDisplayText.textContent = currentUrl;
+            }
+        }
+        
+        // 复制URL到剪贴板
+        async function copyUrlToClipboard() {
+            try {
+                await navigator.clipboard.writeText(window.location.href);
+                showToast('链接已复制到剪贴板', 'success');
+            } catch (err) {
+                console.error('复制失败:', err);
+                showToast('复制失败，请手动复制链接', 'error');
+            }
+        }
+        
+        // 显示Toast通知
+        function showToast(message, type = 'success') {
+            toastMessage.textContent = message;
+            toast.className = 'toast';
             
-            let bpmnXML;
-            
-            try {
-                if (gistId) {
-                    // 从Gist获取XML
-                    bpmnXML = await fetchBPMNFromGist(gistId);
-                } else if (bpmnDataBase64) {
-                    // 从Base64参数获取XML
-                    bpmnXML = atob(bpmnDataBase64);
-                } else {
-                    throw new Error("未提供有效的流程图数据参数。请提供Gist ID或Base64编码的BPMN数据。");
-                }
-                
-                // 2. 导入并渲染XML
-                await bpmnViewer.importXML(bpmnXML);
-                
-                // 3. 调整视图
-                fitViewport();
-                
-                // 4. 隐藏加载界面
-                hideLoading();
-                
-            } catch (error) {
-                console.error('渲染失败:', error);
-                showError(`加载流程图失败: ${error.message}`);
-                hideLoading();
-            }
-        }
-        
-        // 从Gist获取BPMN XML
-        async function fetchBPMNFromGist(gistId) {
-            try {
-                const response = await fetch(`https://api.github.com/gists/${gistId}`);
-                
-                if (!response.ok) {
-                    throw new Error(`Gist请求失败: ${response.status} ${response.statusText}`);
-                }
-                
-                const gistData = await response.json();
-                
-                // 查找BPMN文件
-                for (let filename in gistData.files) {
-                    if (filename.endsWith('.bpmn') || gistData.files[filename].language === 'XML') {
-                        return gistData.files[filename].content;
-                    }
-                }
-                
-                // 如果没有找到BPMN文件，尝试获取第一个文件
-                const firstFile = Object.values(gistData.files)[0];
-                if (firstFile) {
-                    return firstFile.content;
-                }
-                
-                throw new Error('Gist中没有找到BPMN文件');
-                
-            } catch (error) {
-                throw new Error(`从Gist获取数据失败: ${error.message}`);
-            }
-        }
-        
-        // 更新流程图信息面板
-        function updateDiagramInfo() {
-            try {
-                const canvas = bpmnViewer.get('canvas');
-                const elementRegistry = bpmnViewer.get('elementRegistry');
-                
-                const startEvents = elementRegistry.filter(element => element.type === 'bpmn:StartEvent');
-                const tasks = elementRegistry.filter(element => 
-                    element.type === 'bpmn:Task' || 
-                    element.type === 'bpmn:UserTask' || 
-                    element.type === 'bpmn:ServiceTask'
-                );
-                const gateways = elementRegistry.filter(element => element.type === 'bpmn:ExclusiveGateway');
-                const endEvents = elementRegistry.filter(element => element.type === 'bpmn:EndEvent');
-                
-                let infoHTML = `
-                    <p><i class="fas fa-play-circle"></i> <strong>开始事件:</strong> ${startEvents.length}</p>
-                    <p><i class="fas fa-tasks"></i> <strong>任务数量:</strong> ${tasks.length}</p>
-                    <p><i class="fas fa-code-branch"></i> <strong>决策网关:</strong> ${gateways.length}</p>
-                    <p><i class="fas fa-stop-circle"></i> <strong>结束事件:</strong> ${endEvents.length}</p>
-                `;
-                
-                diagramInfo.innerHTML = infoHTML;
-            } catch (error) {
-                console.error('更新图表信息失败:', error);
-                diagramInfo.innerHTML = '<p>无法获取流程图详细信息</p>';
-            }
-        }
-        
-        // 下载BPMN
-        async function downloadBPMN() {
-            try {
-                const { xml } = await bpmnViewer.saveXML({ format: true });
-                downloadFile(xml, 'diagram.bpmn', 'application/xml');
-            } catch (error) {
-                alert('导出BPMN XML失败: ' + error.message);
-            }
-        }
-        
-        // 下载SVG
-        async function downloadSVG() {
-            try {
-                const { svg } = await bpmnViewer.saveSVG();
-                downloadFile(svg, 'diagram.svg', 'image/svg+xml');
-            } catch (error) {
-                alert('导出SVG图像失败: ' +
+            if (type === 'success') {
+                toast.classList.add('to
 <span style='font-size:12px'>[AI生成]</span>
