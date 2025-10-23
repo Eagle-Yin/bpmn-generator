@@ -1,164 +1,322 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BPMN 流程图查看器</title>
-    <!-- 引入 bpmn-js 样式 -->
-    <link rel="stylesheet" href="https://unpkg.com/bpmn-js@17.0.2/dist/assets/bpmn-js.css">
+    <title>BPMN 查看器</title>
+
+    <!-- CSS 样式 -->
     <style>
+        /* 基础样式重置，让页面在不同浏览器中表现更一致 */
         html, body {
             height: 100%;
             margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f8f9fa;
+        }
+
+        /* 主容器，采用 Flex 布局让内容垂直排列 */
+        .container {
             display: flex;
             flex-direction: column;
-            background-color: #f8f9fa;
-            font-family: Arial, sans-serif;
+            height: 100%;
         }
-        #canvas {
-            flex-grow: 1;
-            border-bottom: 1px solid #ccc;
-        }
-        #toolbar {
-            padding: 10px;
+
+        /* 顶部操作栏 */
+        .header {
+            padding: 10px 15px;
             background-color: #fff;
-            box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+            border-bottom: 1px solid #dee2e6;
             display: flex;
-            gap: 10px;
-            justify-content: center;
+            align-items: center;
+            gap: 10px; /* 按钮之间的间距 */
+            flex-shrink: 0; /* 防止头部被压缩 */
         }
-        button {
-            padding: 8px 15px;
-            border: 1px solid #007bff;
-            background-color: #007bff;
-            color: white;
-            border-radius: 5px;
-            cursor: pointer;
+        
+        .header h1 {
+            margin: 0;
+            font-size: 18px;
+            color: #333;
+        }
+
+        /* 下载按钮样式 */
+        .download-button {
+            padding: 6px 12px;
             font-size: 14px;
+            color: #fff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
         }
-        button:hover {
+
+        .download-button:hover {
             background-color: #0056b3;
         }
-        #error-container {
-            display: none;
-            padding: 20px;
-            color: #721c24;
-            background-color: #f8d7da;
-            border: 1px solid #f5c6cb;
-            text-align: center;
+
+        .download-button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        /* BPMN 绘图区域的容器 */
+        #canvas-container {
+            flex-grow: 1; /* 占据所有剩余空间 */
+            position: relative;
+        }
+        
+        /* BPMN 绘图区域 */
+        #canvas {
+            width: 100%;
+            height: 100%;
+            background-color: #fff;
+        }
+
+        /* 错误/加载提示信息 */
+        .message-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #6c757d;
+            font-size: 1.2em;
+            background-color: rgba(255, 255, 255, 0.8);
         }
     </style>
+
+    <!-- 
+      从 CDN 引入 bpmn-js 查看器库。
+      对于新手来说，这是最简单的方式，无需进行复杂的 npm 安装和打包配置。
+      (参考 [[42]][[81]][[142]]
+    -->
+    <script src="https://unpkg.com/bpmn-js/dist/bpmn-viewer.development.js"></script>
 </head>
 <body>
-    <div id="canvas"></div>
-    <div id="toolbar">
-        <button id="download-bpmn">下载 BPMN (XML)</button>
-        <button id="download-svg">下载 SVG 图像</button>
-    </div>
-    <div id="error-container">
-        <h3>加载流程图失败</h3>
-        <p id="error-message"></p>
+
+    <div class="container">
+        <!-- 顶部操作栏 -->
+        <div class="header">
+            <h1>BPMN 流程图查看器</h1>
+            <button id="download-xml" class="download-button" disabled>下载 XML</button>
+            <button id="download-svg" class="download-button" disabled>下载 SVG</button>
+            <button id="download-png" class="download-button" disabled>下载 PNG</button>
+        </div>
+
+        <!-- BPMN 绘图区域 -->
+        <div id="canvas-container">
+            <div id="canvas"></div>
+            <!-- 用于显示加载中或错误信息的浮层 -->
+            <div id="message-overlay" class="message-overlay">
+                <span>正在加载BPMN流程图...</span>
+            </div>
+        </div>
     </div>
 
-    <!-- 引入 bpmn-js 库 -->
-    <script src="https://unpkg.com/bpmn-js@17.0.2/dist/bpmn-viewer.development.js"></script>
-
+    <!-- 核心 JavaScript 逻辑 -->
     <script>
-        // 1. 获取URL参数中的BPMN XML数据
-        const urlParams = new URLSearchParams(window.location.search);
-        const bpmnDataBase64 = urlParams.get('bpmn');
+        // DOMContentLoaded 事件确保在执行脚本前，页面上的所有 HTML 元素都已加载完毕
+        document.addEventListener('DOMContentLoaded', async () => {
 
-        const canvas = document.getElementById('canvas');
-        const errorContainer = document.getElementById('error-container');
-        const errorMessageElem = document.getElementById('error-message');
-
-        let bpmnViewer;
-
-        // 健壮的代码风格：使用异步函数和try-catch处理错误
-        async function renderBPMN() {
-            if (!bpmnDataBase64) {
-                showError("URL中未提供BPMN数据。");
-                return;
-            }
-
-            let bpmnXML;
-            try {
-                // Base64解码
-                bpmnXML = atob(bpmnDataBase64);
-            } catch (e) {
-                showError("BPMN数据解码失败，请检查数据格式。错误: " + e.message);
-                return;
-            }
+            // --- 1. 获取 DOM 元素并初始化 BPMN 查看器 ---
             
-            // 2. 初始化 BpmnJS 查看器
-            bpmnViewer = new BpmnJS({
-                container: '#canvas'
-            });
+            const canvas = document.getElementById('canvas');
+            const messageOverlay = document.getElementById('message-overlay');
+            const messageText = messageOverlay.querySelector('span');
 
-            try {
-                // 3. 导入并渲染XML [[342]][[401]]
-                await bpmnViewer.importXML(bpmnXML);
-                
-                // 渲染成功，调整视图
-                const canvasInstance = bpmnViewer.get('canvas');
-                canvasInstance.zoom('fit-viewport');
-                
-                // 绑定下载事件
-                setupDownloadButtons();
-
-            } catch (err) {
-                // 捕获 bpmn-js 的导入错误 [[102]][[346]]
-                showError("BPMN XML 渲染失败，请检查XML是否符合BPMN 2.0规范。错误详情: " + err.message);
-            }
-        }
-
-        function showError(message) {
-            canvas.style.display = 'none';
-            document.getElementById('toolbar').style.display = 'none';
-            errorMessageElem.textContent = message;
-            errorContainer.style.display = 'block';
-        }
-
-        // 4. 实现下载功能 [[101]][[402]][[406]]
-        function setupDownloadButtons() {
-            const downloadBPMNButton = document.getElementById('download-bpmn');
-            const downloadSVGButton = document.getElementById('download-svg');
-
-            const download = (filename, data, mimeType) => {
-                const blob = new Blob([data], { type: mimeType });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                setTimeout(() => {
-                    document.body.removeChild(a);
-                    window.URL.revokeObjectURL(url);
-                }, 0);
+            const downloadXmlBtn = document.getElementById('download-xml');
+            const downloadSvgBtn = document.getElementById('download-svg');
+            const downloadPngBtn = document.getElementById('download-png');
+            
+            // 显示提示信息
+            const showMessage = (text) => {
+                messageText.textContent = text;
+                messageOverlay.style.display = 'flex';
+            };
+            
+            // 隐藏提示信息
+            const hideMessage = () => {
+                messageOverlay.style.display = 'none';
             };
 
-            downloadBPMNButton.addEventListener('click', async () => {
+            // 创建一个新的 BPMN 查看器实例，并将其附加到 #canvas 元素上
+            // (参考 [[45]][[48]][[81]]
+            const bpmnViewer = new BpmnJS({
+                container: canvas
+            });
+
+            // --- 2. 定义核心功能函数 ---
+
+            /**
+             * 从 URL 查询参数中获取 BPMN XML 数据。
+             * 支持两种模式：
+             * 1. ?url=... : 从一个远程 URL 加载 XML 数据。
+             * 2. ?xml=... : 直接从 URL 参数中获取经过编码的 XML 字符串。
+             * @returns {Promise<string>} 返回 BPMN XML 字符串
+             */
+            const getBpmnXmlFromUrl = async () => {
+                const params = new URLSearchParams(window.location.search);
+                const bpmnUrl = params.get('url');
+                const bpmnXml = params.get('xml');
+
+                if (bpmnUrl) {
+                    showMessage('正在从远程地址获取流程图...');
+                    // 使用 fetch API 从指定的 URL 获取数据
+                    // (参考 [[4]][[11]][[12]]
+                    const response = await fetch(bpmnUrl);
+                    if (!response.ok) {
+                        throw new Error(`无法获取BPMN文件，服务器返回状态: ${response.status}`);
+                    }
+                    return await response.text();
+                } else if (bpmnXml) {
+                    // 对 URL 编码的 XML 字符串进行解码
+                    return decodeURIComponent(bpmnXml);
+                } else {
+                    throw new Error('URL参数中缺少 "url" 或 "xml"');
+                }
+            };
+            
+            /**
+             * 加载并渲染BPMN图表
+             * @param {string} xml - BPMN XML 字符串
+             */
+            const renderDiagram = async (xml) => {
                 try {
+                    showMessage('正在渲染流程图...');
+                    // 使用 bpmn-js 的核心方法 importXML 来解析和渲染图表
+                    // (参考 [[2]][[13]][[15]]
+                    await bpmnViewer.importXML(xml);
+                    
+                    // 渲染成功后，让图表居中并适应视图
+                    const canvasInstance = bpmnViewer.get('canvas');
+                    canvasInstance.zoom('fit-viewport', 'auto');
+                    
+                    hideMessage(); // 隐藏加载提示
+                    
+                    // 启用所有下载按钮
+                    [downloadXmlBtn, downloadSvgBtn, downloadPngBtn].forEach(btn => btn.disabled = false);
+
+                } catch (err) {
+                    // 如果解析或渲染失败，则显示错误信息
+                    // (参考 [[82]] 的错误处理思想)
+                    console.error('无法渲染BPMN图表:', err);
+                    showMessage(`渲染失败: ${err.message}`);
+                    throw new Error(`渲染BPMN图表时出错: ${err.message}`);
+                }
+            };
+
+            /**
+             * 通用下载函数
+             * @param {string} data - 文件内容
+             * @param {string} filename - 下载的文件名
+             * @param {string} type - MIME 类型
+             */
+            const downloadFile = (data, filename, type) => {
+                const blob = new Blob([data], { type });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(link.href);
+            };
+
+            // --- 3. 绑定事件监听器 ---
+
+            // 下载 XML
+            downloadXmlBtn.addEventListener('click', async () => {
+                try {
+                    // 使用 saveXML 方法获取当前的 BPMN XML 数据
+                    // (参考 [[105]][[106]][[107]]
                     const { xml } = await bpmnViewer.saveXML({ format: true });
-                    download('process.bpmn', xml, 'application/xml');
+                    downloadFile(xml, 'diagram.bpmn', 'application/xml');
                 } catch (err) {
-                    alert('无法导出BPMN XML: ' + err.message);
+                    console.error('导出 XML 失败:', err);
+                    alert('导出 XML 失败!');
                 }
             });
 
-            downloadSVGButton.addEventListener('click', async () => {
+            // 下载 SVG
+            downloadSvgBtn.addEventListener('click', async () => {
                 try {
+                    // 使用 saveSVG 方法获取图表的 SVG 表示
+                    // (参考 [[105]][[116]]
                     const { svg } = await bpmnViewer.saveSVG();
-                    download('process.svg', svg, 'image/svg+xml');
+                    downloadFile(svg, 'diagram.svg', 'image/svg+xml');
                 } catch (err) {
-                    alert('无法导出SVG图像: ' + err.message);
+                    console.error('导出 SVG 失败:', err);
+                    alert('导出 SVG 失败!');
                 }
             });
-        }
 
-        // 执行渲染
-        renderBPMN();
+            // 下载 PNG (这是一个更复杂的过程)
+            // 原理: 获取SVG -> 绘制到Canvas -> 从Canvas导出PNG
+            // (综合 [[284]][[287]][[295]]的思路)
+            downloadPngBtn.addEventListener('click', async () => {
+                try {
+                    // 1. 获取 SVG 数据
+                    const { svg } = await bpmnViewer.saveSVG();
+                    
+                    // 2. 创建一个隐藏的 Canvas 元素
+                    const canvasEl = document.createElement('canvas');
+                    const ctx = canvasEl.getContext('2d');
+                    
+                    // 为了提高清晰度，可以设置一个缩放比例
+                    const scale = 2;
+                    const { width, height } = bpmnViewer.get('canvas').getDimensions();
+                    canvasEl.width = width * scale;
+                    canvasEl.height = height * scale;
+                    ctx.scale(scale, scale);
+                    ctx.fillStyle = 'white'; // 设置背景色
+                    ctx.fillRect(0, 0, canvasEl.width, canvasEl.height);
+
+
+                    // 3. 将 SVG 绘制到 Canvas 上
+                    const img = new Image();
+                    // 将 SVG 字符串转换为 Base64 编码的 Data URL
+                    const svgBlob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+                    const url = URL.createObjectURL(svgBlob);
+                    
+                    img.onload = () => {
+                        // 4. 图片加载后，将其绘制到 canvas 上
+                        ctx.drawImage(img, 0, 0);
+                        URL.revokeObjectURL(url);
+                        
+                        // 5. 从 Canvas 获取 PNG 数据并触发下载
+                        const pngUrl = canvasEl.toDataURL('image/png');
+                        const link = document.createElement('a');
+                        link.download = 'diagram.png';
+                        link.href = pngUrl;
+                        link.click();
+                    };
+                    
+                    img.src = url;
+
+                } catch (err) {
+                    console.error('导出 PNG 失败:', err);
+                    alert('导出 PNG 失败!');
+                }
+            });
+
+            // --- 4. 主执行逻辑 ---
+            
+            (async () => {
+                try {
+                    const xml = await getBpmnXmlFromUrl();
+                    await renderDiagram(xml);
+                } catch (err) {
+                    console.error('初始化失败:', err);
+                    showMessage(`加载失败: ${err.message}`);
+                }
+            })();
+
+        });
     </script>
 </body>
 </html>
