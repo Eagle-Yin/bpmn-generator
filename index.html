@@ -3,36 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BPMN 流程图查看器</title>
-    <link rel="stylesheet" href="https://unpkg.com/bpmn-js@17.0.2/dist/assets/bpmn-js.css">
+    <title>BPMN流程图渲染器</title>
+    <link rel="stylesheet" href="https://unpkg.com/bpmn-js@9.4.0/dist/assets/diagram-js.css">
+    <link rel="stylesheet" href="https://unpkg.com/bpmn-js@9.4.0/dist/assets/bpmn-js.css">
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
         }
         
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f8f9fa;
+            background-color: #f7f9fc;
             color: #333;
             line-height: 1.6;
             display: flex;
             flex-direction: column;
             min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
         }
         
         .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
             background: linear-gradient(135deg, #3498db, #2c3e50);
             color: white;
-            padding: 1.5rem;
-            text-align: center;
+            border-radius: 10px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
         
         .header h1 {
-            margin-bottom: 0.5rem;
-            font-size: 2.2rem;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
         }
         
         .header p {
@@ -42,42 +52,52 @@
             margin: 0 auto;
         }
         
-        .container {
-            display: flex;
-            flex: 1;
-        }
-        
-        .sidebar {
-            width: 280px;
-            background-color: white;
-            padding: 1.5rem;
-            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
-            display: flex;
-            flex-direction: column;
-        }
-        
         .main-content {
-            flex: 1;
             display: flex;
-            flex-direction: column;
+            gap: 20px;
+            flex-wrap: wrap;
         }
         
-        .toolbar {
-            padding: 1rem;
-            background-color: white;
-            border-bottom: 1px solid #dee2e6;
+        .input-panel {
+            flex: 1;
+            min-width: 300px;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        
+        .input-panel h2 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        
+        .input-area {
+            margin-bottom: 20px;
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-family: monospace;
+            resize: vertical;
+            font-size: 14px;
+        }
+        
+        .controls {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
             flex-wrap: wrap;
-            gap: 0.5rem;
+            gap: 10px;
+            margin-bottom: 20px;
         }
         
         .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.6rem 1.2rem;
+            padding: 10px 18px;
             background-color: #3498db;
             color: white;
             border: none;
@@ -85,11 +105,13 @@
             cursor: pointer;
             font-weight: 500;
             transition: all 0.2s ease;
-            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
         
         .btn:hover {
-            opacity: 0.9;
+            background-color: #2980b9;
             transform: translateY(-2px);
         }
         
@@ -97,30 +119,93 @@
             background-color: #2ecc71;
         }
         
+        .btn-success:hover {
+            background-color: #27ae60;
+        }
+        
+        .btn-warning {
+            background-color: #f39c12;
+        }
+        
+        .btn-warning:hover {
+            background-color: #e67e22;
+        }
+        
         .canvas-container {
-            flex: 1;
-            position: relative;
+            flex: 2;
+            min-width: 500px;
+            background: white;
+            border-radius: 10px;
             overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .canvas-header {
+            padding: 15px 20px;
+            background: #2c3e50;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .canvas-header h2 {
+            font-size: 1.4rem;
+        }
+        
+        .zoom-controls {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .zoom-btn {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .zoom-btn:hover {
+            background-color: rgba(255, 255, 255, 0.2);
         }
         
         #canvas {
-            position: absolute;
+            flex: 1;
+            min-height: 500px;
             width: 100%;
-            height: 100%;
-            background-color: white;
+        }
+        
+        .status-bar {
+            padding: 12px 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            color: #6c757d;
         }
         
         .loading {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+            display: none;
             position: absolute;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.9);
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
             z-index: 100;
         }
         
@@ -131,7 +216,7 @@
             border-radius: 50%;
             border-top-color: #3498db;
             animation: spin 1s ease-in-out infinite;
-            margin-bottom: 1rem;
+            margin-bottom: 15px;
         }
         
         @keyframes spin {
@@ -140,46 +225,52 @@
         
         .error-container {
             display: none;
-            padding: 2rem;
+            padding: 20px;
             text-align: center;
-            background-color: white;
+            background: #ffecec;
             border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            margin: 2rem;
+            border-left: 4px solid #e74c3c;
+            margin-top: 20px;
         }
         
         .error-icon {
-            font-size: 3rem;
+            font-size: 2.5rem;
             color: #e74c3c;
-            margin-bottom: 1rem;
+            margin-bottom: 15px;
         }
         
         .info-panel {
-            background-color: white;
-            border-radius: 8px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
         
         .info-panel h3 {
-            margin-bottom: 1rem;
+            margin-bottom: 15px;
             color: #2c3e50;
             border-bottom: 2px solid #3498db;
-            padding-bottom: 0.5rem;
+            padding-bottom: 10px;
+        }
+        
+        .legend {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
         }
         
         .legend-item {
             display: flex;
             align-items: center;
-            margin-bottom: 0.8rem;
+            margin-bottom: 12px;
         }
         
-        .legend-color {
+        .color-box {
             width: 20px;
             height: 20px;
             border-radius: 4px;
-            margin-right: 0.8rem;
+            margin-right: 10px;
         }
         
         .start-event { background-color: #2ecc71; }
@@ -187,392 +278,183 @@
         .gateway { background-color: #f39c12; }
         .end-event { background-color: #e74c3c; }
         
-        .zoom-controls {
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-        }
-        
-        .zoom-btn {
-            width: 36px;
-            height: 36px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-color: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-        
-        .zoom-btn:hover {
-            background-color: #3498db;
-            color: white;
-        }
-        
         .footer {
             text-align: center;
-            padding: 1.5rem;
-            background-color: #343a40;
-            color: white;
-        }
-        
-        /* URL显示优化 - 使用CSS隐藏文本技术 */
-        .url-display {
-            margin: 1rem 0;
-            padding: 0.75rem;
-            background-color: #f8f9fa;
-            border-radius: 6px;
-            border: 1px solid #e9ecef;
+            margin-top: 30px;
+            padding: 20px;
+            color: #7f8c8d;
             font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
         }
         
-        .url-text {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            flex: 1;
-            margin-right: 0.5rem;
-            color: #6c757d;
-            position: relative;
-            padding-right: 1.5em; /* 为图标预留空间 */
-        }
-        
-        /* 使用CSS隐藏长链接文本，显示为图标 */
-        .url-text:not(:hover) {
-            text-indent: -9999px; /* 将文本推出可视区域 */
-            overflow: hidden;
-            white-space: nowrap;
-        }
-        
-        .url-text::after {
-            content: '🔗'; /* 使用链接图标代替文本 */
-            font-size: 0.9em;
-            position: absolute;
-            right: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            text-indent: 0; /* 重置文本缩进 */
-        }
-        
-        .url-action {
-            display: flex;
-            gap: 0.5rem;
-        }
-        
-        .copy-btn {
-            background: none;
-            border: none;
-            color: #3498db;
-            cursor: pointer;
-            font-size: 0.9rem;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-        }
-        
-        .copy-btn:hover {
-            background-color: rgba(52, 152, 219, 0.1);
-        }
-        
-        /* Toast通知 */
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            padding: 1rem 1.5rem;
-            background-color: #333;
-            color: white;
-            border-radius: 6px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            z-index: 1000;
-            opacity: 0;
-            transform: translateY(20px);
-            transition: opacity 0.3s, transform 0.3s;
-        }
-        
-        .toast.show {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        
-        .toast-success {
-            background-color: #2ecc71;
-        }
-        
-        .toast-error {
-            background-color: #e74c3c;
-        }
-        
-        @media (max-width: 992px) {
-            .container {
-                flex-direction: column;
-            }
-            
-            .sidebar {
-                width: 100%;
-                order: 2;
-            }
-            
+        @media (max-width: 900px) {
             .main-content {
-                order: 1;
-            }
-            
-            .url-display {
                 flex-direction: column;
-                align-items: flex-start;
-                gap: 0.5rem;
             }
             
-            .url-action {
-                align-self: flex-end;
+            .input-panel, .canvas-container {
+                min-width: 100%;
             }
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>BPMN 流程图查看器</h1>
-        <p>由 COZE AI 智能体生成的专业业务流程模型</p>
-    </div>
-    
     <div class="container">
-        <div class="sidebar">
-            <div class="info-panel">
-                <h3>流程图信息</h3>
-                <div id="diagram-info">
-                    <p>正在加载流程图信息...</p>
-                </div>
-                
-                <!-- URL显示区域 - 使用CSS隐藏文本优化 -->
-                <div class="url-display">
-                    <div class="url-text" id="url-display-text" title="悬停查看完整URL">
-                        加载中...
-                    </div>
-                    <div class="url-action">
-                        <button class="copy-btn" id="copy-url-btn" title="复制链接">
-                            📋
-                        </button>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="info-panel">
-                <h3>图例说明</h3>
-                <div class="legend-item">
-                    <div class="legend-color start-event"></div>
-                    <div>开始事件</div>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color task"></div>
-                    <div>任务/活动</div>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color gateway"></div>
-                    <div>网关/决策点</div>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color end-event"></div>
-                    <div>结束事件</div>
-                </div>
-            </div>
+        <div class="header">
+            <h1>BPMN 流程图渲染器</h1>
+            <p>专业、精准的BPMN 2.0流程图可视化工具</p>
         </div>
         
         <div class="main-content">
-            <div class="toolbar">
-                <div class="zoom-controls">
-                    <button class="zoom-btn" id="zoom-in" title="放大">+</button>
-                    <button class="zoom-btn" id="zoom-out" title="缩小">-</button>
-                    <button class="zoom-btn" id="zoom-fit" title="适应窗口">⤢</button>
+            <div class="input-panel">
+                <h2>BPMN XML 输入</h2>
+                <div class="input-area">
+                    <textarea id="bpmn-xml-input" placeholder="请在此处粘贴BPMN 2.0 XML代码..."><bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="Process_1" isExecutable="false">
+    <bpmn:startEvent id="StartEvent_1"/>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="173" y="102" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions></textarea>
                 </div>
                 
-                <div>
-                    <button class="btn" id="download-bpmn">
-                        下载 BPMN
+                <div class="controls">
+                    <button id="render-btn" class="btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                        </svg>
+                        渲染流程图
                     </button>
-                    <button class="btn btn-success" id="download-svg">
-                        下载 SVG
+                    <button id="clear-btn" class="btn btn-warning">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 6L6 18M6 6l12 12"></path>
+                        </svg>
+                        清除
                     </button>
+                    <button id="example-btn" class="btn btn-success">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 5v14M5 12h14"></path>
+                        </svg>
+                        加载示例
+                    </button>
+                </div>
+                
+                <div class="error-container" id="error-container">
+                    <div class="error-icon">⚠️</div>
+                    <h3>渲染错误</h3>
+                    <p id="error-message"></p>
                 </div>
             </div>
             
             <div class="canvas-container">
-                <div id="canvas"></div>
+                <div class="canvas-header">
+                    <h2>流程图预览</h2>
+                    <div class="zoom-controls">
+                        <button class="zoom-btn" id="zoom-in" title="放大">+</button>
+                        <button class="zoom-btn" id="zoom-out" title="缩小">-</button>
+                        <button class="zoom-btn" id="zoom-fit" title="适应窗口">⤢</button>
+                    </div>
+                </div>
                 
+                <div id="canvas"></div>
                 <div class="loading" id="loading">
                     <div class="spinner"></div>
-                    <p>正在加载流程图数据...</p>
+                    <p>正在渲染流程图...</p>
+                </div>
+                
+                <div class="status-bar">
+                    <span id="status-info">等待输入</span>
+                    <span id="element-count">元素: 0</span>
                 </div>
             </div>
         </div>
-    </div>
-    
-    <div class="error-container" id="error-container">
-        <div class="error-icon">⚠️</div>
-        <h3>加载流程图失败</h3>
-        <p id="error-message"></p>
-        <div style="margin-top: 1.5rem;">
-            <button class="btn" id="retry-button">
-                重新尝试
-            </button>
+        
+        <div class="info-panel">
+            <h3>BPMN 图例说明</h3>
+            <div class="legend">
+                <div>
+                    <div class="legend-item">
+                        <div class="color-box start-event"></div>
+                        <div>开始事件</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="color-box task"></div>
+                        <div>任务/活动</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="color-box gateway"></div>
+                        <div>网关/决策点</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="color-box end-event"></div>
+                        <div>结束事件</div>
+                    </div>
+                </div>
+                <div>
+                    <p>BPMN（业务流程模型与标注）是一种用于描述业务流程的标准。此渲染器基于bpmn-js库构建，支持BPMN 2.0标准的流程图渲染。</p>
+                </div>
+                <div>
+                    <p>只需将BPMN 2.0 XML代码粘贴到左侧输入框，点击"渲染流程图"即可可视化您的业务流程。</p>
+                </div>
+            </div>
         </div>
-    </div>
-    
-    <!-- Toast通知 -->
-    <div class="toast" id="toast">
-        <span id="toast-message">操作成功</span>
-    </div>
-    
-    <div class="footer">
-        <p>Powered by BPMN.js | 专注于BPMN流程图解析与展示</p>
+        
+        <div class="footer">
+            <p>Powered by bpmn-js | 专注于BPMN 2.0标准流程图的可视化渲染</p>
+        </div>
     </div>
 
     <!-- 引入 bpmn-js 库 -->
-    <script src="https://unpkg.com/bpmn-js@17.0.2/dist/bpmn-viewer.development.js"></script>
+    <script src="https://unpkg.com/bpmn-js@9.4.0/dist/bpmn-viewer.development.js"></script>
 
     <script>
         // 全局变量
-        let bpmnViewer;
+        let bpmnViewer = null;
         
         // DOM 元素
+        const xmlInput = document.getElementById('bpmn-xml-input');
+        const renderBtn = document.getElementById('render-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const exampleBtn = document.getElementById('example-btn');
         const canvas = document.getElementById('canvas');
         const loadingElement = document.getElementById('loading');
         const errorContainer = document.getElementById('error-container');
         const errorMessageElem = document.getElementById('error-message');
-        const retryButton = document.getElementById('retry-button');
-        const diagramInfo = document.getElementById('diagram-info');
-        const urlDisplayText = document.getElementById('url-display-text');
-        const copyUrlBtn = document.getElementById('copy-url-btn');
-        const toast = document.getElementById('toast');
-        const toastMessage = document.getElementById('toast-message');
+        const statusInfo = document.getElementById('status-info');
+        const elementCount = document.getElementById('element-count');
+        const zoomInBtn = document.getElementById('zoom-in');
+        const zoomOutBtn = document.getElementById('zoom-out');
+        const zoomFitBtn = document.getElementById('zoom-fit');
         
-        // 初始化
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeViewer();
-            setupEventListeners();
-            updateUrlDisplay();
-            renderBPMN();
-        });
-        
-        // 初始化 BPMN 查看器
-        function initializeViewer() {
-            bpmnViewer = new BpmnJS({
-                container: '#canvas'
-            });
-            
-            // 添加已加载事件的监听器
-            bpmnViewer.on('import.done', function(event) {
-                if (!event.error) {
-                    updateDiagramInfo();
-                }
-            });
-        }
-        
-        // 设置事件监听器
-        function setupEventListeners() {
-            // 下载按钮
-            document.getElementById('download-bpmn').addEventListener('click', downloadBPMN);
-            document.getElementById('download-svg').addEventListener('click', downloadSVG);
-            
-            // 缩放按钮
-            document.getElementById('zoom-in').addEventListener('click', () => adjustZoom(0.2));
-            document.getElementById('zoom-out').addEventListener('click', () => adjustZoom(-0.2));
-            document.getElementById('zoom-fit').addEventListener('click', fitViewport);
-            
-            // 重试按钮
-            retryButton.addEventListener('click', renderBPMN);
-            
-            // 复制URL按钮
-            copyUrlBtn.addEventListener('click', copyUrlToClipboard);
-        }
-        
-        // 更新URL显示 - 使用CSS隐藏文本技术
-        function updateUrlDisplay() {
-            const currentUrl = window.location.href;
-            
-            // 设置URL显示文本
-            if (currentUrl.includes('?')) {
-                const baseUrl = currentUrl.split('?')[0];
-                // 使用CSS隐藏长URL，显示为链接图标
-                urlDisplayText.textContent = `${baseUrl}?...[BPMN数据]`;
-                urlDisplayText.title = currentUrl; // 鼠标悬停时显示完整URL
-            } else {
-                urlDisplayText.textContent = currentUrl;
-            }
-        }
-        
-        // 复制URL到剪贴板
-        async function copyUrlToClipboard() {
-            try {
-                await navigator.clipboard.writeText(window.location.href);
-                showToast('链接已复制到剪贴板', 'success');
-            } catch (err) {
-                console.error('复制失败:', err);
-                showToast('复制失败，请手动复制链接', 'error');
-            }
-        }
-        
-        // 显示Toast通知
-        function showToast(message, type = 'success') {
-            toastMessage.textContent = message;
-            toast.className = 'toast';
-            
-            if (type === 'success') {
-                toast.classList.add('toast-success');
-            } else {
-                toast.classList.add('toast-error');
-            }
-            
-            toast.classList.add('show');
-            
-            // 3秒后隐藏
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 3000);
-        }
-        
-        // 渲染BPMN流程图 - 核心功能
-        async function renderBPMN() {
-            hideError();
-            showLoading();
-            
-            try {
-                // 1. 获取URL参数
-                const urlParams = new URLSearchParams(window.location.search);
-                const bpmnDataBase64 = urlParams.get('bpmn');
-                
-                if (!bpmnDataBase64) {
-                    throw new Error("未找到BPMN数据参数。请确保URL中包含bpmn参数");
-                }
-                
-                // 2. 解码Base64字符串
-                let bpmnXML;
-                try {
-                    bpmnXML = atob(bpmnDataBase64);
-                } catch (decodeError) {
-                    throw new Error("Base64解码失败: " + decodeError.message);
-                }
-                
-                if (!bpmnXML || bpmnXML.trim() === '') {
-                    throw new Error("解码后的BPMN XML为空");
-                }
-                
-                // 3. 导入并渲染XML
-                try {
-                    await bpmnViewer.importXML(bpmnXML);
-                    
-                    // 4. 调整视图
-                    fitViewport();
-                    
-                    // 5. 隐藏加载界面
-                    hideLoading();
-                    
-                } catch (importError) {
-                    console.error('BPMN XML导入错误:', importError);
-                    throw new Error("BPMN XML解析失败: " + importError.message
+        // 示例BPMN XML
+        const exampleBPMN = `
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="Process_1" isExecutable="false">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>SequenceFlow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="UserTask_1">
+      <bpmn:incoming>SequenceFlow_1</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_2</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="ExclusiveGateway_1">
+      <bpmn:incoming>SequenceFlow_2</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_3</bpmn:outgoing>
+      <bpmn:outgoing>SequenceFlow_4</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="ServiceTask_1">
+      <bpmn:incoming>SequenceFlow_3</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_5</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="EndEvent_1">
+      <bpmn:incoming>SequenceFlow_4</bpmn:incoming>
+      <bpmn:incoming>SequenceFlow_5</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_1" sourceRef="StartEvent_1" targetRef="UserTask_1" />
+    <bpmn:sequenceFlow id="SequenceFlow_2" sourceRef="UserTask_1" targetRef="ExclusiveGateway_1" />
+    <bpmn:sequenceFlow id="SequenceFlow_3" sourceRef="ExclusiveGateway_1" targetRef
 <span style='font-size:12px'>[AI生成]</span>
