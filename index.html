@@ -3,436 +3,167 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BPMN流程图渲染器</title>
-    <link rel="stylesheet" href="https://unpkg.com/bpmn-js@9.4.0/dist/assets/diagram-js.css">
-    <link rel="stylesheet" href="https://unpkg.com/bpmn-js@9.4.0/dist/assets/bpmn-js.css">
+    <title>BPMN 流程图查看器</title>
+    <!-- 引入BPMN.js核心库和样式文件 -->
+    <script src="https://unpkg.com/bpmn-js@17.0.2/dist/bpmn-viewer.development.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/bpmn-js@17.0.2/dist/assets/diagram-js.css">
+    <link rel="stylesheet" href="https://unpkg.com/bpmn-js@17.0.2/dist/assets/bpmn-font/css/bpmn.css">
     <style>
-        * {
+        html, body {
+            height: 100%;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-        }
-        
-        body {
-            background-color: #f7f9fc;
-            color: #333;
-            line-height: 1.6;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f7f7f7;
             display: flex;
             flex-direction: column;
-            min-height: 100vh;
-            padding: 20px;
         }
-        
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            width: 100%;
-        }
-        
-        .header {
-            text-align: center;
-            margin-bottom: 20px;
-            padding: 15px;
-            background: linear-gradient(135deg, #3498db, #2c3e50);
-            color: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-        
-        .header h1 {
-            margin-bottom: 8px;
-            font-size: 2rem;
-        }
-        
-        .header p {
-            opacity: 0.9;
-            font-size: 1rem;
-        }
-        
-        .canvas-container {
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-            display: flex;
-            flex-direction: column;
-            height: 75vh;
-        }
-        
-        .canvas-header {
-            padding: 12px 20px;
-            background: #2c3e50;
-            color: white;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .canvas-header h2 {
-            font-size: 1.2rem;
-        }
-        
-        .controls {
-            display: flex;
-            gap: 10px;
-        }
-        
-        .btn {
-            padding: 8px 16px;
-            background-color: #3498db;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        
-        .btn:hover {
-            background-color: #2980b9;
-        }
-        
-        .btn-success {
-            background-color: #2ecc71;
-        }
-        
-        .btn-success:hover {
-            background-color: #27ae60;
-        }
-        
         #canvas {
-            flex: 1;
-            width: 100%;
+            flex-grow: 1;
+            border: 1px solid #ccc;
+            background-color: white;
         }
-        
-        .status-bar {
-            padding: 10px 20px;
-            background: #f8f9fa;
-            border-top: 1px solid #e9ecef;
+        .header {
+            padding: 15px;
+            background-color: #fff;
+            border-bottom: 1px solid #ddd;
             display: flex;
             justify-content: space-between;
             align-items: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 1.5em;
+        }
+        .buttons button {
+            margin-left: 10px;
+            padding: 8px 15px;
+            border: 1px solid #007bff;
+            background-color: #007bff;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
             font-size: 14px;
-            color: #6c757d;
         }
-        
-        .loading {
-            display: none;
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(255, 255, 255, 0.9);
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            z-index: 100;
+        .buttons button:hover {
+            background-color: #0056b3;
         }
-        
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid rgba(52, 152, 219, 0.3);
-            border-radius: 50%;
-            border-top-color: #3498db;
-            animation: spin 1s ease-in-out infinite;
-            margin-bottom: 10px;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        .error-container {
-            display: none;
-            padding: 15px;
+        #message {
+            padding: 20px;
             text-align: center;
-            background: #ffecec;
-            border-radius: 6px;
-            border-left: 4px solid #e74c3c;
-            margin-top: 15px;
-        }
-        
-        .error-icon {
-            font-size: 2rem;
-            color: #e74c3c;
-            margin-bottom: 10px;
-        }
-        
-        .footer {
-            text-align: center;
-            margin-top: 20px;
-            padding: 15px;
-            color: #7f8c8d;
-            font-size: 0.85rem;
-        }
-        
-        @media (max-width: 768px) {
-            .container {
-                padding: 10px;
-            }
-            
-            .header h1 {
-                font-size: 1.5rem;
-            }
-            
-            .canvas-header {
-                flex-direction: column;
-                gap: 10px;
-                align-items: flex-start;
-            }
-            
-            .controls {
-                width: 100%;
-                justify-content: center;
-            }
-            
-            .btn {
-                flex: 1;
-                justify-content: center;
-            }
+            font-size: 1.2em;
+            color: #555;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>BPMN 流程图渲染器</h1>
-            <p>专业、精准的BPMN 2.0流程图可视化工具</p>
-        </div>
-        
-        <div class="canvas-container">
-            <div class="canvas-header">
-                <h2>流程图预览</h2>
-                <div class="controls">
-                    <button id="zoom-in" class="btn" title="放大">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="12" y1="5" x2="12" y2="19"></line>
-                            <line x1="5" y1="12" x2="19" y2="12"></line>
-                        </svg>
-                        放大
-                    </button>
-                    <button id="zoom-out" class="btn" title="缩小">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="5" y1="12" x2="19" y2="12"></line>
-                        </svg>
-                        缩小
-                    </button>
-                    <button id="zoom-fit" class="btn" title="适应窗口">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
-                        </svg>
-                        适应窗口
-                    </button>
-                    <button id="download-svg" class="btn btn-success" title="下载SVG">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="7 10 12 15 17 10"></polyline>
-                            <line x1="12" y1="15" x2="12" y2="3"></line>
-                        </svg>
-                        下载SVG
-                    </button>
-                </div>
-            </div>
-            
-            <div id="canvas"></div>
-            <div class="loading" id="loading">
-                <div class="spinner"></div>
-                <p>正在渲染流程图...</p>
-            </div>
-            
-            <div class="status-bar">
-                <span id="status-info">等待BPMN XML数据...</span>
-                <span id="element-count">元素: 0</span>
-            </div>
-        </div>
-        
-        <div class="error-container" id="error-container">
-            <div class="error-icon">⚠️</div>
-            <h3>渲染错误</h3>
-            <p id="error-message"></p>
-        </div>
-        
-        <div class="footer">
-            <p>Powered by bpmn-js | 专注于BPMN 2.0标准流程图的可视化渲染</p>
+    <div class="header">
+        <h1>BPMN 流程图查看器</h1>
+        <div class="buttons">
+            <button id="download-bpmn">下载BPMN文件</button>
+            <button id="download-svg">下载SVG图片</button>
         </div>
     </div>
-
-    <!-- 引入 bpmn-js 库 -->
-    <script src="https://unpkg.com/bpmn-js@9.4.0/dist/bpmn-viewer.development.js"></script>
+    <div id="canvas"></div>
+    <div id="message" style="display: none;"></div>
 
     <script>
-        // 全局变量
-        let bpmnViewer = null;
-        
-        // DOM 元素
-        const canvas = document.getElementById('canvas');
-        const loadingElement = document.getElementById('loading');
-        const errorContainer = document.getElementById('error-container');
-        const errorMessageElem = document.getElementById('error-message');
-        const statusInfo = document.getElementById('status-info');
-        const elementCount = document.getElementById('element-count');
-        const zoomInBtn = document.getElementById('zoom-in');
-        const zoomOutBtn = document.getElementById('zoom-out');
-        const zoomFitBtn = document.getElementById('zoom-fit');
-        const downloadSvgBtn = document.getElementById('download-svg');
-        
-        // 初始化
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeViewer();
-            setupEventListeners();
-            renderBPMNFromURL();
+        // 初始化BPMN Viewer
+        const bpmnViewer = new BpmnJS({
+            container: '#canvas'
         });
-        
-        // 初始化 BPMN 查看器
-        function initializeViewer() {
-            bpmnViewer = new BpmnJS({
-                container: '#canvas'
-            });
-            
-            // 添加已加载事件的监听器
-            bpmnViewer.on('import.done', function(event) {
-                if (!event.error) {
-                    updateElementCount();
-                    statusInfo.textContent = '流程图渲染成功';
-                }
-            });
-        }
-        
-        // 设置事件监听器
-        function setupEventListeners() {
-            // 缩放按钮
-            zoomInBtn.addEventListener('click', () => adjustZoom(0.2));
-            zoomOutBtn.addEventListener('click', () => adjustZoom(-0.2));
-            zoomFitBtn.addEventListener('click', fitViewport);
-            
-            // 下载按钮
-            downloadSvgBtn.addEventListener('click', downloadSVG);
-        }
-        
-        // 从URL参数获取BPMN XML并渲染
-        function renderBPMNFromURL() {
-            hideError();
-            showLoading();
-            statusInfo.textContent = '正在解析URL参数...';
-            
+
+        // 定义用于下载的全局变量
+        let currentXml = '';
+
+        /**
+         * 渲染BPMN XML
+         * @param {string} xml - BPMN 2.0 XML字符串
+         */
+        async function renderBpmn(xml) {
             try {
-                // 1. 获取URL参数
-                const urlParams = new URLSearchParams(window.location.search);
-                const bpmnXML = urlParams.get('xml');
-                
-                if (!bpmnXML) {
-                    throw new Error("未找到BPMN XML参数。请确保URL中包含xml参数");
-                }
-                
-                statusInfo.textContent = '正在渲染BPMN流程图...';
-                
-                // 2. 导入并渲染XML
-                bpmnViewer.importXML(bpmnXML)
-                    .then(() => {
-                        // 3. 调整视图
-                        fitViewport();
-                        
-                        // 4. 隐藏加载界面
-                        hideLoading();
-                    })
-                    .catch(importError => {
-                        console.error('BPMN XML导入错误:', importError);
-                        throw new Error("BPMN XML解析失败: " + importError.message);
-                    });
-                
-            } catch (error) {
-                console.error('渲染失败:', error);
-                showError(`加载流程图失败: ${error.message}`);
-                hideLoading();
-                statusInfo.textContent = '渲染失败';
+                // 使用 importXML 方法导入和渲染图表 [[48]][[118]][[223]]
+                await bpmnViewer.importXML(xml);
+                // 调整视图以适应画布
+                bpmnViewer.get('canvas').zoom('fit-viewport');
+                document.getElementById('message').style.display = 'none';
+                document.getElementById('canvas').style.display = 'block';
+                currentXml = xml;
+            } catch (err) {
+                // 如果导入失败，显示错误信息 [[343]][[402]]
+                console.error('无法渲染BPMN XML:', err);
+                const messageDiv = document.getElementById('message');
+                messageDiv.textContent = `错误：无法解析或渲染提供的BPMN数据。请检查XML格式是否正确。错误详情: ${err.message}`;
+                messageDiv.style.display = 'block';
+                document.getElementById('canvas').style.display = 'none';
             }
         }
         
-        // 调整缩放
-        function adjustZoom(factor) {
-            try {
-                const canvas = bpmnViewer.get('canvas');
-                const currentZoom = canvas.zoom();
-                canvas.zoom(currentZoom + factor);
-                statusInfo.textContent = `缩放级别: ${Math.round((currentZoom + factor) * 100)}%`;
-            } catch (error) {
-                console.error('缩放失败:', error);
-            }
-        }
-        
-        // 适应视口
-        function fitViewport() {
-            try {
-                const canvas = bpmnViewer.get('canvas');
-                canvas.zoom('fit-viewport');
-                statusInfo.textContent = '已适应窗口视图';
-            } catch (error) {
-                console.error('适应视口失败:', error);
-            }
-        }
-        
-        // 下载SVG
-        async function downloadSVG() {
-            try {
-                statusInfo.textContent = '正在生成SVG文件...';
-                const { svg } = await bpmnViewer.saveSVG();
-                downloadFile(svg, 'bpmn-diagram.svg', 'image/svg+xml');
-                statusInfo.textContent = 'SVG文件已下载';
-            } catch (error) {
-                console.error('导出SVG图像失败:', error);
-                showError('导出SVG图像失败: ' + error.message);
-            }
-        }
-        
-        // 文件下载辅助函数
-        function downloadFile(content, fileName, contentType) {
-            const blob = new Blob([content], { type: contentType });
+        /**
+         * 下载文件函数
+         * @param {string} filename - 下载的文件名
+         * @param {string} data - 文件内容
+         * @param {string} mimeType - 文件的MIME类型
+         */
+        function downloadFile(filename, data, mimeType) {
+            // 该下载逻辑参考了多个示例 [[101]][[162]][[282]]
+            const blob = new Blob([data], { type: mimeType });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
+            a.style.display = 'none';
             a.href = url;
-            a.download = fileName;
+            a.download = filename;
+            document.body.appendChild(a);
             a.click();
-            URL.revokeObjectURL(url);
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
         }
-        
-        // 更新元素计数
-        function updateElementCount() {
-            try {
-                const elementRegistry = bpmnViewer.get('elementRegistry');
-                const count = elementRegistry ? elementRegistry.length : 0;
-                elementCount.textContent = `元素: ${count}`;
-            } catch (error) {
-                console.error('更新元素计数失败:', error);
-                elementCount.textContent = '元素: 未知';
+
+        // 页面加载时执行
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            // 从URL参数中获取名为'bpmn'的BPMN XML数据
+            const bpmnXmlData = urlParams.get('bpmn');
+
+            if (bpmnXmlData) {
+                try {
+                    // 对数据进行解码
+                    const decodedXml = decodeURIComponent(bpmnXmlData);
+                    renderBpmn(decodedXml);
+                } catch (e) {
+                    console.error('URL解码失败:', e);
+                    const messageDiv = document.getElementById('message');
+                    messageDiv.textContent = '错误：无法解码URL中的BPMN数据。';
+                    messageDiv.style.display = 'block';
+                }
+            } else {
+                const messageDiv = document.getElementById('message');
+                messageDiv.textContent = '未在URL中找到BPMN数据。请通过URL参数"?bpmn=<您的XML数据>"提供。';
+                messageDiv.style.display = 'block';
+                document.getElementById('canvas').style.display = 'none';
             }
-        }
-        
-        // 显示加载状态
-        function showLoading() {
-            loadingElement.style.display = 'flex';
-        }
-        
-        // 隐藏加载状态
-        function hideLoading() {
-            loadingElement.style.display = 'none';
-        }
-        
-        // 显示错误
-        function showError(message) {
-            errorMessageElem.textContent = message;
-            errorContainer.style.display = 'block';
-        }
-        
-        // 隐藏错误
-        function hideError() {
-            errorContainer.style.display = 'none';
-        }
+        };
+
+        // 绑定下载BPMN按钮事件
+        document.getElementById('download-bpmn').addEventListener('click', () => {
+            if (currentXml) {
+                downloadFile('process.bpmn', currentXml, 'application/xml');
+            } else {
+                alert('没有可下载的BPMN数据。');
+            }
+        });
+
+        // 绑定下载SVG按钮事件
+        document.getElementById('download-svg').addEventListener('click', async () => {
+            try {
+                const { svg } = await bpmnViewer.saveSVG();
+                downloadFile('process.svg', svg, 'image/svg+xml');
+            } catch (err) {
+                console.error('导出SVG失败:', err);
+                alert('导出SVG图片失败。');
+            }
+        });
+
     </script>
 </body>
 </html>
