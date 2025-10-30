@@ -3,112 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BPMN 流程图查看器</title>
-    <!-- 引入BPMN.js核心库和样式文件 -->
-    <script src="https://unpkg.com/bpmn-js@17.0.2/dist/bpmn-viewer.development.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/bpmn-js@17.0.2/dist/assets/diagram-js.css">
-    <link rel="stylesheet" href="https://unpkg.com/bpmn-js@17.0.2/dist/assets/bpmn-font/css/bpmn.css">
+    <title>BPMN 流程图预览器</title>
+    <!-- 引入 bpmn-js 样式 -->
+    <link rel="stylesheet" href="https://unpkg.com/bpmn-js@17.0.2/dist/assets/bpmn-js.css">
     <style>
         html, body {
             height: 100%;
             margin: 0;
             padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background-color: #f7f7f7;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             display: flex;
             flex-direction: column;
         }
         #canvas {
             flex-grow: 1;
-            border: 1px solid #ccc;
-            background-color: white;
+            border-bottom: 2px solid #ccc;
         }
         .header {
             padding: 15px;
-            background-color: #fff;
+            background-color: #f7f7f7;
             border-bottom: 1px solid #ddd;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            text-align: center;
         }
-        .header h1 {
-            margin: 0;
-            font-size: 1.5em;
+        .buttons {
+            padding: 15px;
+            text-align: center;
+            background-color: #f9f9f9;
         }
-        .buttons button {
-            margin-left: 10px;
-            padding: 8px 15px;
-            border: 1px solid #007bff;
+        button {
             background-color: #007bff;
             color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 8px;
             border-radius: 5px;
             cursor: pointer;
             font-size: 14px;
+            transition: background-color 0.3s;
         }
-        .buttons button:hover {
+        button:hover {
             background-color: #0056b3;
         }
-        #message {
-            padding: 20px;
-            text-align: center;
-            font-size: 1.2em;
-            color: #555;
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            font-size: 18px;
+            color: #666;
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>BPMN 流程图查看器</h1>
-        <div class="buttons">
-            <button id="download-bpmn">下载BPMN文件</button>
-            <button id="download-svg">下载SVG图片</button>
+        <h1>BPMN 流程图预览</h1>
+        <p>基于Coze代码节点生成的BPMN XML数据渲染</p>
+    </div>
+    <div id="canvas">
+        <div class="loading" id="loading">
+            正在加载流程图...
         </div>
     </div>
-    <div id="canvas"></div>
-    <div id="message" style="display: none;"></div>
+    <div class="buttons">
+        <button id="download-bpmn">下载 BPMN (XML)</button>
+        <button id="download-svg">下载 SVG 图像</button>
+        <button id="reload">重新加载</button>
+    </div>
+
+    <!-- 引入 bpmn-js 库 -->
+    <script src="https://unpkg.com/bpmn-js@17.0.2/dist/bpmn-viewer.production.min.js"></script>
 
     <script>
-        // 初始化BPMN Viewer
-        const bpmnViewer = new BpmnJS({
-            container: '#canvas'
-        });
+        // 全局变量存储BPMN实例和XML内容
+        let bpmnViewer = null;
+        let currentXmlContent = '';
 
-        // 定义用于下载的全局变量
-        let currentXml = '';
-
-        /**
-         * 渲染BPMN XML
-         * @param {string} xml - BPMN 2.0 XML字符串
-         */
-        async function renderBpmn(xml) {
-            try {
-                // 使用 importXML 方法导入和渲染图表 [[48]][[118]][[223]]
-                await bpmnViewer.importXML(xml);
-                // 调整视图以适应画布
-                bpmnViewer.get('canvas').zoom('fit-viewport');
-                document.getElementById('message').style.display = 'none';
-                document.getElementById('canvas').style.display = 'block';
-                currentXml = xml;
-            } catch (err) {
-                // 如果导入失败，显示错误信息 [[343]][[402]]
-                console.error('无法渲染BPMN XML:', err);
-                const messageDiv = document.getElementById('message');
-                messageDiv.textContent = `错误：无法解析或渲染提供的BPMN数据。请检查XML格式是否正确。错误详情: ${err.message}`;
-                messageDiv.style.display = 'block';
-                document.getElementById('canvas').style.display = 'none';
+        // 初始化BPMN查看器
+        function initializeBpmnViewer() {
+            const canvas = document.getElementById('canvas');
+            // 移除加载提示
+            const loadingElement = document.getElementById('loading');
+            if (loadingElement) {
+                loadingElement.remove();
             }
+            
+            // 创建BPMN查看器实例
+            bpmnViewer = new BpmnJS({ 
+                container: canvas,
+                // 可以在这里添加自定义配置，如修改默认颜色
+                // 配置示例：修改默认节点颜色
+                // bpmnRenderer: {
+                //     defaultFillColor: '#1e78ee',
+                //     defaultStrokeColor: '#fff',
+                //     defaultLabelColor: '#fff'
+                // }
+            });
         }
-        
-        /**
-         * 下载文件函数
-         * @param {string} filename - 下载的文件名
-         * @param {string} data - 文件内容
-         * @param {string} mimeType - 文件的MIME类型
-         */
-        function downloadFile(filename, data, mimeType) {
-            // 该下载逻辑参考了多个示例 [[101]][[162]][[282]]
+
+        // 用于下载文件的辅助函数
+        function download(filename, data, mimeType) {
             const blob = new Blob([data], { type: mimeType });
-            const url = URL.createObjectURL(blob);
+            const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.style.display = 'none';
             a.href = url;
@@ -119,50 +114,207 @@
             document.body.removeChild(a);
         }
 
-        // 页面加载时执行
-        window.onload = function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            // 从URL参数中获取名为'bpmn'的BPMN XML数据
-            const bpmnXmlData = urlParams.get('bpmn');
-
-            if (bpmnXmlData) {
-                try {
-                    // 对数据进行解码
-                    const decodedXml = decodeURIComponent(bpmnXmlData);
-                    renderBpmn(decodedXml);
-                } catch (e) {
-                    console.error('URL解码失败:', e);
-                    const messageDiv = document.getElementById('message');
-                    messageDiv.textContent = '错误：无法解码URL中的BPMN数据。';
-                    messageDiv.style.display = 'block';
-                }
-            } else {
-                const messageDiv = document.getElementById('message');
-                messageDiv.textContent = '未在URL中找到BPMN数据。请通过URL参数"?bpmn=<您的XML数据>"提供。';
-                messageDiv.style.display = 'block';
-                document.getElementById('canvas').style.display = 'none';
-            }
-        };
-
-        // 绑定下载BPMN按钮事件
-        document.getElementById('download-bpmn').addEventListener('click', () => {
-            if (currentXml) {
-                downloadFile('process.bpmn', currentXml, 'application/xml');
-            } else {
-                alert('没有可下载的BPMN数据。');
-            }
-        });
-
-        // 绑定下载SVG按钮事件
-        document.getElementById('download-svg').addEventListener('click', async () => {
+        // 渲染BPMN流程图
+        async function renderBpmnDiagram(xmlContent) {
             try {
-                const { svg } = await bpmnViewer.saveSVG();
-                downloadFile('process.svg', svg, 'image/svg+xml');
+                if (!bpmnViewer) {
+                    initializeBpmnViewer();
+                }
+
+                // 导入并渲染XML[[3]][[12]]
+                await bpmnViewer.importXML(xmlContent);
+                console.log('BPMN流程图加载成功!');
+                
+                currentXmlContent = xmlContent;
+
+                // 绑定下载事件
+                bindDownloadEvents();
+                
             } catch (err) {
-                console.error('导出SVG失败:', err);
-                alert('导出SVG图片失败。');
+                console.error('无法导入BPMN XML', err);
+                const canvas = document.getElementById('canvas');
+                canvas.innerHTML = `
+                    <div style="padding: 40px; text-align: center;">
+                        <div style="color: #d32f2f; font-size: 18px; margin-bottom: 20px;">
+                            ❌ 错误：加载流程图失败
+                        </div>
+                        <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; text-align: left; max-width: 600px; margin: 0 auto;">
+                            <strong>错误详情：</strong><br>
+                            <pre style="white-space: pre-wrap; font-size: 12px;">${err.message}</pre>
+                        </div>
+                        <button onclick="location.reload()" style="margin-top: 20px; padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                            重新加载
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        // 绑定下载按钮事件
+        function bindDownloadEvents() {
+            document.getElementById('download-bpmn').addEventListener('click', async () => {
+                try {
+                    const { xml } = await bpmnViewer.saveXML({ format: true });
+                    download('process-diagram.bpmn', xml, 'application/xml');
+                } catch (err) {
+                    console.error('无法导出BPMN:', err);
+                    alert('下载BPMN文件失败: ' + err.message);
+                }
+            });
+
+            document.getElementById('download-svg').addEventListener('click', async () => {
+                try {
+                    const { svg } = await bpmnViewer.saveSVG();
+                    download('process-diagram.svg', svg, 'image/svg+xml');
+                } catch (err) {
+                    console.error('无法导出SVG:', err);
+                    alert('下载SVG图像失败: ' + err.message);
+                }
+            });
+
+            document.getElementById('reload').addEventListener('click', () => {
+                if (currentXmlContent) {
+                    renderBpmnDiagram(currentXmlContent);
+                }
+            });
+        }
+
+        // 从Coze代码节点数据中提取XML内容
+        function extractXmlFromCozeData(cozeData) {
+            console.log("开始处理Coze数据:", cozeData);
+            
+            // 模拟您提供的Coze代码节点的提取逻辑
+            let xmlContent = null;
+            let extractionMethod = "";
+
+            // 深度遍历查找XML内容
+            function findXmlContent(obj, path = "") {
+                if (typeof obj === 'string') {
+                    if (obj.trim().startsWith('<?xml') || 
+                        obj.includes('<bpmn:') || 
+                        obj.includes('bpmn2:') ||
+                        obj.includes('</bpmn:') ||
+                        (obj.includes('<process') && obj.includes('</process>'))) {
+                        return obj;
+                    }
+                } else if (typeof obj === 'object' && obj !== null) {
+                    for (const key in obj) {
+                        const result = findXmlContent(obj[key], path ? `${path}.${key}` : key);
+                        if (result) return result;
+                    }
+                }
+                return null;
+            }
+
+            // 尝试多种提取方式
+            xmlContent = findXmlContent(cozeData, "root");
+            if (xmlContent) {
+                extractionMethod = "深度遍历查找";
+                return xmlContent;
+            }
+
+            // 常见字段名尝试
+            const commonFields = ['xml', 'bpmn', 'bpmn_xml', 'process_xml', 'validated_xml', 
+                                'result', 'content', 'data', 'bpmnContent', 'xmlContent'];
+            for (const field of commonFields) {
+                if (cozeData && cozeData[field] && typeof cozeData[field] === 'string') {
+                    const content = cozeData[field];
+                    if (content.includes('<?xml') || content.includes('<bpmn:')) {
+                        xmlContent = content;
+                        extractionMethod = `字段提取 (${field})`;
+                        return xmlContent;
+                    }
+                }
+            }
+
+            // 如果是纯字符串输入
+            if (typeof cozeData === 'string') {
+                xmlContent = cozeData;
+                extractionMethod = "直接字符串输入";
+                return xmlContent;
+            }
+
+            throw new Error('无法从输入数据中提取有效的BPMN XML内容');
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 这里模拟从Coze平台接收数据
+            // 实际使用时，Coze平台会将数据通过适当的方式传递给页面
+            try {
+                // 假设window.cozeData是Coze平台传递过来的数据
+                const cozeData = window.cozeData || getDataFromUrl() || getDefaultData();
+                
+                const xmlContent = extractXmlFromCozeData(cozeData);
+                renderBpmnDiagram(xmlContent);
+                
+            } catch (error) {
+                console.error('初始化失败:', error);
+                document.getElementById('canvas').innerHTML = `
+                    <div style="padding: 40px; text-align: center;">
+                        <div style="color: #d32f2f; font-size: 18px; margin-bottom: 20px;">
+                            ❌ 初始化错误
+                        </div>
+                        <div style="background: #f5f5f5; padding: 15px; border-radius: 5px;">
+                            ${error.message}
+                        </div>
+                    </div>
+                `;
             }
         });
+
+        // 辅助函数：从URL获取数据（备用方案）
+        function getDataFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const dataParam = urlParams.get('data');
+            if (dataParam) {
+                try {
+                    return JSON.parse(decodeURIComponent(dataParam));
+                } catch (e) {
+                    console.warn('URL数据解析失败，尝试作为纯XML处理');
+                    return dataParam;
+                }
+            }
+            return null;
+        }
+
+        // 辅助函数：获取默认测试数据
+        function getDefaultData() {
+            // 提供一个简单的默认BPMN XML用于测试
+            return {
+                bpmn_xml: `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="Process_1" isExecutable="false">
+    <bpmn:startEvent id="StartEvent_1" name="开始"/>
+    <bpmn:userTask id="UserTask_1" name="处理任务"/>
+    <bpmn:endEvent id="EndEvent_1" name="结束"/>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="UserTask_1"/>
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="UserTask_1" targetRef="EndEvent_1"/>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="179" y="159" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1c2l03g_di" bpmnElement="UserTask_1">
+        <dc:Bounds x="280" y="137" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1k2ey4g_di" bpmnElement="EndEvent_1">
+        <dc:Bounds x="450" y="159" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="215" y="177"/>
+        <di:waypoint x="280" y="177"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="380" y="177"/>
+        <di:waypoint x="450" y="177"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>`
+            };
+        }
 
     </script>
 </body>
